@@ -1,0 +1,33 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# App data (generated audio, uploads, manifests)
+services/api/data/
+*.wav
+*.mp3
+*.m4a
+*.m4b
+
+# Local-only Claude Code skills (third-party, installed per machine)
+.claude/skills/
