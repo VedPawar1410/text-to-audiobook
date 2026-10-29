@@ -6,6 +6,7 @@ requires-python = ">=3.11,<3.13"  # kokoro supports Python <3.13
 dependencies = [
     "en-core-web-sm",
     "fastapi>=0.162.0",
+    "google-genai>=2.34.0",
     "httpx>=0.28.1",
     "kokoro>=0.9.4",
     "psycopg[binary]>=3.3.6",

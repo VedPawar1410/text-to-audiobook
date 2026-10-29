@@ -10,32 +10,11 @@ import numpy as np
 from kokoro import KModel, KPipeline
 
 from app.tts.base import RenderResult, Voice
+from app.tts.kokoro_voices import VOICE_IDS, VOICES
 from app.tts.timing import Token, merge_chunks, trim_to_speech
 
 REPO_ID = "hexgrad/Kokoro-82M"
 SAMPLE_RATE = 24_000
-
-# The 28 English voices in the model repo. Id format: <a|b accent><f|m gender>_<name>.
-VOICE_IDS = [
-    "af_alloy", "af_aoede", "af_bella", "af_heart", "af_jessica", "af_kore", "af_nicole",
-    "af_nova", "af_river", "af_sarah", "af_sky",
-    "am_adam", "am_echo", "am_eric", "am_fenrir", "am_liam", "am_michael", "am_onyx",
-    "am_puck", "am_santa",
-    "bf_alice", "bf_emma", "bf_isabella", "bf_lily",
-    "bm_daniel", "bm_fable", "bm_george", "bm_lewis",
-]  # fmt: skip
-
-
-def _voice(voice_id: str) -> Voice:
-    return Voice(
-        id=voice_id,
-        name=voice_id.split("_", 1)[1].capitalize(),
-        gender="female" if voice_id[1] == "f" else "male",
-        accent="American" if voice_id[0] == "a" else "British",
-    )
-
-
-VOICES = [_voice(v) for v in VOICE_IDS]
 
 
 class KokoroEngine:
