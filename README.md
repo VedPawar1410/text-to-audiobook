@@ -60,7 +60,7 @@ The resulting design system is in [docs/design-system.md](docs/design-system.md)
 
 ## Run locally
 
-Prerequisites: Node 20+, Python 3.11 with [uv](https://docs.astral.sh/uv/), and a local Postgres.
+Prerequisites: Node 20+, Python 3.11 or 3.12 with [uv](https://docs.astral.sh/uv/), a local Postgres, and `espeak-ng` (`brew install espeak-ng`; Kokoro uses it to pronounce unusual words). The first narration downloads the Kokoro model (about 330MB) from Hugging Face.
 
 ```bash
 createdb text_to_audiobook                                              # once

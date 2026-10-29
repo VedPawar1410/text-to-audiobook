@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 
 from app.db import db_is_reachable
+from app.tts.routes import router as tts_router
 
 app = FastAPI(title="text-to-audiobook API")
+app.include_router(tts_router)
 
 
 @app.get("/health")
