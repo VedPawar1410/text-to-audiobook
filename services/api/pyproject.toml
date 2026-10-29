@@ -2,11 +2,14 @@
 name = "api"
 version = "0.1.0"
 description = "text-to-audiobook backend: ingest, AI director, TTS render, export"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"  # kokoro supports Python <3.13
 dependencies = [
+    "en-core-web-sm",
     "fastapi>=0.162.0",
+    "kokoro>=0.9.4",
     "psycopg[binary]>=3.3.6",
     "pydantic-settings>=2.16.2",
+    "soundfile>=0.14.0",
     "sqlalchemy>=2.1.6",
     "uvicorn[standard]>=0.54.0",
 ]
@@ -20,3 +23,7 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = ["kokoro: loads the real Kokoro model (slower); skip with -m 'not kokoro'"]
+
+[tool.uv.sources]
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
