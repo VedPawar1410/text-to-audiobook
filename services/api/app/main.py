@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,6 +8,10 @@ from app.documents.routes import router as documents_router
 from app.documents.service import init_db
 from app.ingest.routes import router as ingest_router
 from app.tts.routes import router as tts_router
+
+# Uvicorn only configures its own loggers; without this, the app's warnings
+# (LLM retries, timeouts, failed chunks) are silently dropped.
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
 
 
 @asynccontextmanager

@@ -31,9 +31,12 @@ export function HealthDot() {
   }, []);
 
   return (
-    <span role="status" className="flex items-center gap-2 font-mono text-xs text-ink-muted">
+    <span role="status" aria-label={LABELS[state]} className="flex items-center gap-2 font-mono text-xs text-ink-muted">
       <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${DOT[state]}`} />
-      {LABELS[state]}
+      {/* On phones the nav is tight: the dot alone carries the state */}
+      <span aria-hidden className="hidden md:inline">
+        {LABELS[state]}
+      </span>
     </span>
   );
 }
