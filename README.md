@@ -44,7 +44,29 @@ The UI is built with these Claude Code skills. They are installed locally under 
 
 - [frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design)
 - [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
-- [high-end-visual-design](https://github.com/Leonxlnx/taste-skill-classics)
+- [high-end-visual-design](https://github.com/Leonxlnx/taste-skill-classics) (the `soft-skill` folder)
+
+To install the two third-party skills, copy just the skill folders (review them first):
+
+```bash
+git clone --depth 1 https://github.com/nextlevelbuilder/ui-ux-pro-max-skill /tmp/uipro
+git clone --depth 1 https://github.com/Leonxlnx/taste-skill-classics /tmp/taste
+mkdir -p .claude/skills
+cp -R /tmp/uipro/.claude/skills/ui-ux-pro-max .claude/skills/
+cp -R /tmp/taste/skills/soft-skill .claude/skills/high-end-visual-design
+```
+
+The resulting design system is in [docs/design-system.md](docs/design-system.md), and the narration rules the AI director follows are in [docs/narration-guide.md](docs/narration-guide.md).
+
+## Run locally
+
+Prerequisites: Node 20+, Python 3.11 with [uv](https://docs.astral.sh/uv/), and a local Postgres.
+
+```bash
+createdb text_to_audiobook                                              # once
+cd services/api && uv run uvicorn app.main:app --reload --port 8000     # API
+cd apps/web && npm install && npm run dev                               # web → http://localhost:3000
+```
 
 ## License
 

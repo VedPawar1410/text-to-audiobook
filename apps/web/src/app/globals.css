@@ -1,26 +1,71 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Design tokens: "night theatre".
+ * The page is a dark auditorium; the voice is a warm tungsten spotlight.
+ * Full rationale and contrast ratios: docs/design-system.md
+ */
+@theme {
+  --color-stage: #0b0908;          /* page background, warm near-black */
+  --color-stage-raised: #151210;   /* card cores */
+  --color-ink: #f4ede2;            /* primary text, 17:1 on stage */
+  --color-ink-muted: #a89f94;      /* secondary text, 7.6:1 on stage */
+  --color-ink-faint: #6e665d;      /* large text (24px+) only, 3.3:1 on cards */
+  --color-tungsten: #ffb547;       /* the single accent: spotlight, CTAs, focus */
+  --color-on-tungsten: #1a1208;    /* text on tungsten fills, 10.5:1 */
+  --color-hairline: rgb(244 237 226 / 0.08);
+  --color-danger: #f87171;
+
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* Fonts come from next/font CSS variables set on <html>, so these must be inline. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-read: var(--font-newsreader), Georgia, serif;
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-stage);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: rgb(255 181 71 / 0.3);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-tungsten);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Film grain: fixed and non-interactive, so it never repaints while scrolling. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
