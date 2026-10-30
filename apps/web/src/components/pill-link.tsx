@@ -40,17 +40,17 @@ export function PillLink({ href, children, icon = "down" }: PillLinkProps) {
   );
 }
 
-type PillButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { busy?: boolean };
+type PillButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { busy?: boolean; icon?: keyof typeof ICONS };
 
-export function PillButton({ children, busy = false, disabled, ...props }: PillButtonProps) {
+export function PillButton({ children, busy = false, disabled, icon = "right", ...props }: PillButtonProps) {
   return (
     <button {...props} disabled={disabled || busy} aria-busy={busy} className={PILL}>
       {children}
-      <PillIcon icon="right" busy={busy} />
+      <PillIcon icon={icon} busy={busy} />
     </button>
   );
 }
 
 /** Quiet secondary action next to a pill. */
 export const SECONDARY =
-  "inline-flex min-h-11 cursor-pointer items-center rounded-full px-5 text-sm text-ink-muted transition-colors duration-300 ease-spring hover:bg-hairline hover:text-ink";
+  "inline-flex min-h-11 cursor-pointer items-center rounded-full px-5 text-sm text-ink-muted transition-colors duration-300 ease-spring hover:bg-hairline hover:text-ink disabled:cursor-not-allowed disabled:opacity-50";

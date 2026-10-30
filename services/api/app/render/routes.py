@@ -3,6 +3,7 @@
 import threading
 import uuid
 from collections.abc import Callable
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
@@ -12,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import ChapterAudio, Document, Section
+from app.render.export import FORMATS, NotReady, download_name, export_audiobook
 from app.render.performance import fingerprint
 from app.render.service import (
     active_job,
@@ -133,3 +135,35 @@ def chapter_audio(document_id: uuid.UUID, section_id: int, db: Session = Depends
 @router.get("/chapters/{section_id}/manifest")
 def chapter_manifest(document_id: uuid.UUID, section_id: int, db: Session = Depends(get_db)):
     return FileResponse(_chapter_file(db, document_id, section_id, 1), media_type="application/json")
+
+
+class ExportOut(BaseModel):
+    filename: str
+    size_bytes: int
+
+
+ExportFormat = Literal["m4b", "mp3"]
+
+
+def _export(db: Session, document_id: uuid.UUID, extension: str):
+    document = _document(db, document_id)
+    try:
+        return document, export_audiobook(db, document, extension)
+    except NotReady:
+        raise HTTPException(status_code=409, detail="Render every chapter before downloading the audiobook.") from None
+    except RuntimeError as error:
+        raise HTTPException(status_code=500, detail="Couldn't package the audiobook. Please try again.") from error
+
+
+@router.post("/exports/{extension}", response_model=ExportOut)
+def prepare_export(document_id: uuid.UUID, extension: ExportFormat, db: Session = Depends(get_db)):
+    """Build the file (an M4B of a long book takes a while) so the UI can show progress."""
+    document, path = _export(db, document_id, extension)
+    return ExportOut(filename=download_name(document, extension), size_bytes=path.stat().st_size)
+
+
+@router.get("/exports/{extension}")
+def download_export(document_id: uuid.UUID, extension: ExportFormat, db: Session = Depends(get_db)):
+    document, path = _export(db, document_id, extension)  # instant once prepared
+    # filename= makes it a download (Content-Disposition: attachment), not a page to play
+    return FileResponse(path, media_type=FORMATS[extension].media_type, filename=download_name(document, extension))

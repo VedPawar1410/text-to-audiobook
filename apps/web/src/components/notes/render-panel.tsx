@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { Bezel } from "@/components/bezel";
-import { PillButton, PillLink } from "@/components/pill-link";
+import { PillButton, PillLink, SECONDARY } from "@/components/pill-link";
 import { ErrorNote, LABEL } from "@/components/ui";
-import { api, chapterAudioUrl, isRendering, type Chapter, type DocumentDetail } from "@/lib/api";
+import { api, chapterAudioUrl, exportUrl, isRendering, type Chapter, type DocumentDetail, type ExportFormat } from "@/lib/api";
 import { useRender } from "@/lib/hooks";
 import { formatDuration } from "@/lib/vocabulary";
 
 const REALTIME_FACTOR = 2.5; // Kokoro on an M1 CPU renders ~2.5x faster than real time (PR 3)
+const M4B_SECONDS_PER_HOUR = 14; // AAC encoding speed on an M1 (PR 10)
 
 function clock(seconds: number) {
   const s = Math.round(seconds);
@@ -115,6 +116,10 @@ export function RenderPanel({ document, revision }: { document: DocumentDetail; 
             </div>
           )}
 
+          {!rendering && chapters.length > 0 && ready.length === chapters.length && (
+            <Downloads documentId={document.id} seconds={total} stale={stale} />
+          )}
+
           {job?.status === "failed" && job.error && <ErrorNote>{job.error}</ErrorNote>}
           {error && <ErrorNote>{error}</ErrorNote>}
 
@@ -128,6 +133,49 @@ export function RenderPanel({ document, revision }: { document: DocumentDetail; 
         </div>
       </Bezel>
     </section>
+  );
+}
+
+function Downloads({ documentId, seconds, stale }: { documentId: string; seconds: number; stale: number }) {
+  const [preparing, setPreparing] = useState<ExportFormat | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const wait = Math.round((seconds / 3600) * M4B_SECONDS_PER_HOUR);
+
+  async function download(format: ExportFormat) {
+    setPreparing(format);
+    setError(null);
+    try {
+      await api.prepareExport(documentId, format);
+      // The file is ready, so this answers at once; its attachment header keeps us on the page
+      const link = window.document.createElement("a");
+      link.href = exportUrl(documentId, format);
+      link.click();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setPreparing(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 border-t border-hairline pt-6">
+      <p className={LABEL}>Take it with you</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <PillButton icon="down" onClick={() => void download("m4b")} busy={preparing === "m4b"} disabled={preparing !== null}>
+          Download audiobook
+        </PillButton>
+        <button type="button" onClick={() => void download("mp3")} disabled={preparing !== null} className={SECONDARY}>
+          {preparing === "mp3" ? "Packaging…" : "Single MP3"}
+        </button>
+      </div>
+      <p aria-live="polite" className="max-w-md text-sm text-ink-muted">
+        {preparing === "m4b"
+          ? `Packaging with chapter markers…${wait > 10 ? ` About ${wait < 60 ? `${wait} seconds` : formatDuration(wait / 60)}.` : ""}`
+          : "M4B keeps the chapters in Apple Books and most audiobook apps. MP3 plays anywhere."}
+        {stale > 0 && " Changed chapters download as they were last recorded."}
+      </p>
+      {error && <ErrorNote>{error}</ErrorNote>}
+    </div>
   );
 }
 
