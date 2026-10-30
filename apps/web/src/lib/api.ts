@@ -73,6 +73,32 @@ export type DocumentDetail = DocumentSummary & {
 
 export type Voice = { id: string; name: string; gender: "female" | "male"; accent: "American" | "British" };
 
+export type RenderJob = {
+  id: number;
+  status: "queued" | "rendering" | "done" | "failed" | "cancelled";
+  total_lines: number;
+  done_lines: number;
+  error: string | null;
+};
+
+export type Chapter = {
+  section_id: number;
+  position: number;
+  title: string | null;
+  status: "pending" | "rendering" | "ready";
+  duration_s: number | null;
+  stale: boolean;
+  version: string | null;
+};
+
+export type RenderStatus = { job: RenderJob | null; chapters: Chapter[] };
+
+export const isRendering = (job: RenderJob | null) => job?.status === "queued" || job?.status === "rendering";
+
+/** The version query changes on every re-render, so the browser never plays stale audio. */
+export const chapterAudioUrl = (documentId: string, chapter: Chapter) =>
+  `/api/documents/${documentId}/chapters/${chapter.section_id}/audio?v=${chapter.version}`;
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -123,6 +149,10 @@ export const api = {
     request<Persona>(`/documents/${id}/personas/${encodeURIComponent(castId)}`, json("PATCH", patch)),
   updateSegment: (id: string, segmentId: number, patch: Partial<Pick<Segment, "emotion" | "intensity" | "role">>) =>
     request<Segment>(`/documents/${id}/segments/${segmentId}`, json("PATCH", patch)),
+
+  renderStatus: (id: string) => request<RenderStatus>(`/documents/${id}/render`),
+  startRender: (id: string) => request<RenderStatus>(`/documents/${id}/render`, { method: "POST" }),
+  cancelRender: (id: string) => request<void>(`/documents/${id}/render/cancel`, { method: "POST" }),
 
   voices: () => request<Voice[]>("/tts/voices"),
   previewVoice: async (text: string, voice: string, speed: number) => {

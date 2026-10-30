@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type DocumentDetail, type Voice } from "./api";
+import { api, isRendering, type DocumentDetail, type RenderStatus, type Voice } from "./api";
 
 const POLL_MS = 2000;
 // A 44-byte silent WAV, used to "unlock" audio inside the click (see useVoicePreview)
@@ -37,6 +37,36 @@ export function useDocument(id: string) {
 
   const reload = useCallback(() => setVersion((v) => v + 1), []);
   return { document, setDocument, error, reload };
+}
+
+/** Render progress and chapters; polls while a render is running. `revision` forces a refresh. */
+export function useRender(id: string, revision: number) {
+  const [status, setStatus] = useState<RenderStatus | null>(null);
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const load = () =>
+      api
+        .renderStatus(id)
+        .then((next) => {
+          if (cancelled) return;
+          setStatus(next);
+          if (isRendering(next.job)) timer = setTimeout(load, 1500);
+        })
+        .catch(() => undefined);
+
+    load();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [id, version, revision]);
+
+  const reload = useCallback(() => setVersion((v) => v + 1), []);
+  return { status, reload };
 }
 
 export function useVoices() {

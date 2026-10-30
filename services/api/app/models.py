@@ -99,3 +99,31 @@ class Persona(Base):
     speed: Mapped[float]
 
     document: Mapped[Document] = relationship(back_populates="personas")
+
+
+class RenderJob(Base):
+    """One run of the renderer over a document. Progress is counted in lines."""
+
+    __tablename__ = "render_jobs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="queued")  # queued → rendering → done | failed | cancelled
+    total_lines: Mapped[int] = mapped_column(default=0)
+    done_lines: Mapped[int] = mapped_column(default=0)
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    finished_at: Mapped[datetime | None]
+
+
+class ChapterAudio(Base):
+    """The rendered audio of one section. Files live under settings.data_dir."""
+
+    __tablename__ = "chapter_audio"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), index=True)
+    section_id: Mapped[int] = mapped_column(ForeignKey("sections.id", ondelete="CASCADE"), unique=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending → rendering → ready
+    fingerprint: Mapped[str | None] = mapped_column(String(32))  # what the audio was rendered from
+    duration_s: Mapped[float | None]

@@ -64,7 +64,8 @@ Prerequisites: Node 20+, Python 3.11 or 3.12 with [uv](https://docs.astral.sh/uv
 
 ```bash
 createdb text_to_audiobook                                              # once
-cd services/api && uv run uvicorn app.main:app --reload --port 8000     # API
+cd services/api && uv sync                                              # once, and after dependency changes
+cd services/api && uv run --no-sync uvicorn app.main:app --reload --port 8000  # API (no network on start)
 cd apps/web && npm install && npm run dev                               # web → http://localhost:3000
 ```
 

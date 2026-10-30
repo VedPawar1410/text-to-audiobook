@@ -10,7 +10,7 @@ from app.db import Base, SessionLocal, engine
 from app.director.casting import auto_cast
 from app.director.director import NARRATOR, Line, direct_document, direct_lines
 from app.llm import LLM, LLMError
-from app.models import Document, Persona, Section, Segment
+from app.models import ChapterAudio, Document, Persona, RenderJob, Section, Segment
 from app.structure.models import ParsedDocument
 
 log = logging.getLogger(__name__)
@@ -30,6 +30,12 @@ def init_db() -> None:
                 .where(Document.status == "directing")
                 .values(status="failed", error="Interrupted by a server restart. Run the director again.")
             )
+            db.execute(
+                update(RenderJob)
+                .where(RenderJob.status.in_(("queued", "rendering")))
+                .values(status="failed", error="Interrupted by a server restart. Render again to continue.")
+            )
+            db.execute(update(ChapterAudio).where(ChapterAudio.status == "rendering").values(status="pending"))
             db.commit()
     except OperationalError:
         log.warning("Database unavailable at startup; /health will report it")

@@ -4,7 +4,7 @@
     {
       "name": "api",
       "runtimeExecutable": "uv",
-      "runtimeArgs": ["run", "--directory", "services/api", "uvicorn", "app.main:app", "--reload", "--port", "8000"],
+      "runtimeArgs": ["run", "--no-sync", "--directory", "services/api", "uvicorn", "app.main:app", "--reload", "--port", "8000"],
       "port": 8000
     },
     {
