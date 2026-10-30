@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Bezel } from "@/components/bezel";
-import { PillButton } from "@/components/pill-link";
+import { PillButton, PillLink } from "@/components/pill-link";
 import { ErrorNote, LABEL } from "@/components/ui";
 import { api, chapterAudioUrl, isRendering, type Chapter, type DocumentDetail } from "@/lib/api";
 import { useRender } from "@/lib/hooks";
@@ -104,6 +104,14 @@ export function RenderPanel({ document, revision }: { document: DocumentDetail; 
                 {label}
               </PillButton>
               <p className="max-w-md text-sm text-ink-muted">{hint}</p>
+            </div>
+          )}
+
+          {ready.length > 0 && (
+            <div>
+              <PillLink href={`/documents/${document.id}/listen`} icon="right">
+                Open the reader
+              </PillLink>
             </div>
           )}
 
