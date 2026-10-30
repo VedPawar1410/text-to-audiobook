@@ -1,3 +1,5 @@
+import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -171,3 +173,76 @@ def test_renders_interrupted_by_a_restart_are_marked_failed(engine):
 
     job = client.get(f"/documents/{document_id}/render").json()["job"]
     assert job["status"] == "failed" and "restart" in job["error"]
+
+
+def probe(path: Path) -> dict:
+    output = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_chapters", "-show_format", "-of", "json", str(path)],
+        capture_output=True, text=True, check=True,
+    )  # fmt: skip
+    return json.loads(output.stdout)
+
+
+@pytest.mark.parametrize(("extension", "media_type"), [("m4b", "audio/mp4"), ("mp3", "audio/mpeg")])
+def test_the_audiobook_downloads_as_one_file_with_chapters(engine, tmp_path, extension, media_type):
+    document_id = directed_screenplay()
+    client.post(f"/documents/{document_id}/render")
+    chapters = client.get(f"/documents/{document_id}/render").json()["chapters"]
+
+    prepared = client.post(f"/documents/{document_id}/exports/{extension}")
+    download = client.get(f"/documents/{document_id}/exports/{extension}")
+
+    assert prepared.status_code == 200
+    assert prepared.json()["filename"] == f"THE CITADEL AT THE END OF TIME.{extension}"
+    assert download.headers["content-type"] == media_type
+    assert download.headers["content-disposition"].startswith("attachment;")
+    assert len(download.content) == prepared.json()["size_bytes"]
+
+    saved = tmp_path / f"book.{extension}"
+    saved.write_bytes(download.content)
+    info = probe(saved)
+    marks = info["chapters"]
+    assert [m["tags"]["title"] for m in marks] == ["Opening", "INT. CITADEL THRONE ROOM - NIGHT", "EXT. THE VOID - CONTINUOUS"]
+    assert [m["tags"]["title"] for m in marks][1:] == [c["title"] for c in chapters][1:]
+    assert float(marks[1]["start_time"]) == pytest.approx(float(marks[0]["end_time"]))  # back to back
+    # The markers follow the real audio: the last one ends where the file does
+    assert float(marks[-1]["end_time"]) == pytest.approx(float(info["format"]["duration"]), abs=0.1)
+    assert info["format"]["tags"]["title"] == "THE CITADEL AT THE END OF TIME"
+
+
+def test_exports_are_cached_until_something_in_them_changes(engine):
+    document_id = directed_screenplay()
+    client.post(f"/documents/{document_id}/render")
+    exports = document_dir(document_id) / "exports"
+
+    client.post(f"/documents/{document_id}/exports/mp3")
+    first = next(exports.glob("*.mp3"))
+    built_at = first.stat().st_mtime_ns
+    client.post(f"/documents/{document_id}/exports/mp3")
+    assert first.stat().st_mtime_ns == built_at  # the second request reused it
+
+    client.patch(f"/documents/{document_id}", json={"title": "The Citadel"})
+    renamed = client.post(f"/documents/{document_id}/exports/mp3").json()
+
+    assert renamed["filename"] == "The Citadel.mp3"
+    assert [p.name for p in exports.glob("*.mp3")] != [first.name]  # rebuilt, old copy removed
+    assert len(list(exports.glob("*.mp3"))) == 1
+
+
+def test_export_needs_every_chapter_recorded(engine):
+    document_id = directed_screenplay()
+
+    assert client.post(f"/documents/{document_id}/exports/m4b").status_code == 409
+    assert client.get(f"/documents/{document_id}/exports/m4b").status_code == 409
+    assert client.post(f"/documents/{document_id}/exports/wav").status_code == 422
+
+
+def test_export_metadata_escapes_ffmetadata_syntax():
+    from app.models import Document
+    from app.render.export import metadata
+
+    text = metadata(Document(title="Part=1; #2\\x", genre="sci-fi"), [("A=B", 1.5), ("C", 2.25)])
+
+    assert "title=Part\\=1\\; \\#2\\\\x" in text
+    assert "START=0\nEND=1500\ntitle=A\\=B" in text
+    assert "START=1500\nEND=3750\ntitle=C" in text

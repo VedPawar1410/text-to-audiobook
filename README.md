@@ -10,7 +10,7 @@ Turn any long text (scripts, articles, books, PDFs) into an expressive, multi-vo
 - **A cast of voices.** Each character gets its own voice. You can design voice *personas* by describing them ("gravelly, menacing, slow and theatrical"). Real people's voices are never cloned.
 - **Read-along.** Live word highlighting synced to the audio. Click any word to jump there, or turn highlighting off.
 - **Ask the AI.** Pause, select a passage and ask what it means, without leaving the page.
-- **Export.** Download MP3 per chapter, or a single M4B audiobook with chapter markers.
+- **Export.** Download the whole book as an M4B audiobook or a single MP3, both with chapter markers.
 - **No length limit.** Paste text, upload `.txt`/`.md`/PDF, or point it at a web article.
 
 ## Cost model

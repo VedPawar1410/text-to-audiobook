@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
     return [{ source: "/api/:path*", destination: `${apiUrl}/:path*` }];
   },
   cacheComponents: true,
+  experimental: {
+    // The proxy gives up after 30 s by default; packaging a long book as an M4B takes longer
+    proxyTimeout: 5 * 60_000,
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {

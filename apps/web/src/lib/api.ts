@@ -99,6 +99,13 @@ export const isRendering = (job: RenderJob | null) => job?.status === "queued" |
 export const chapterAudioUrl = (documentId: string, chapter: Chapter) =>
   `/api/documents/${documentId}/chapters/${chapter.section_id}/audio?v=${chapter.version}`;
 
+export type ExportFormat = "m4b" | "mp3";
+
+export type ExportInfo = { filename: string; size_bytes: number };
+
+/** Serves the packaged file as a download (Content-Disposition: attachment). */
+export const exportUrl = (documentId: string, format: ExportFormat) => `/api/documents/${documentId}/exports/${format}`;
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -179,6 +186,9 @@ export const api = {
   renderStatus: (id: string) => request<RenderStatus>(`/documents/${id}/render`),
   startRender: (id: string) => request<RenderStatus>(`/documents/${id}/render`, { method: "POST" }),
   cancelRender: (id: string) => request<void>(`/documents/${id}/render/cancel`, { method: "POST" }),
+  /** Builds the download (an M4B of a long book takes a while), so the UI can show progress. */
+  prepareExport: (id: string, format: ExportFormat) =>
+    request<ExportInfo>(`/documents/${id}/exports/${format}`, { method: "POST" }),
 
   voices: () => request<Voice[]>("/tts/voices"),
   previewVoice: async (text: string, voice: string, speed: number) => {
