@@ -20,6 +20,7 @@ type Props = {
  */
 export const ReaderText = memo(function ReaderText({ document, playable, names, highlight, onSeek }: Props) {
   function onClick(event: MouseEvent<HTMLDivElement>) {
+    if (!window.getSelection()?.isCollapsed) return; // the reader is selecting text, not seeking
     const target = event.target as HTMLElement;
     const segment = target.closest<HTMLElement>("[data-seg]");
     if (!segment?.closest(".playable")) return;

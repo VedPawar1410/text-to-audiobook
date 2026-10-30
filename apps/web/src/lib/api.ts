@@ -130,6 +130,32 @@ function json(method: string, body: unknown): RequestInit {
   return { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
 }
 
+export type AskTurn = { role: "user" | "assistant"; text: string };
+
+export type AskRequest = { question: string; selection: string | null; segment_id: number | null; history: AskTurn[] };
+
+/** Yields the answer as it's written (the API streams plain text). */
+export async function* askStream(documentId: string, body: AskRequest): AsyncGenerator<string> {
+  const response = await fetch(`/api/documents/${documentId}/ask`, json("POST", body));
+  if (!response.ok || !response.body) {
+    let message = "Couldn't ask right now.";
+    try {
+      const error = await response.json();
+      if (typeof error.detail === "string") message = error.detail;
+    } catch {
+      // not JSON: keep the generic message
+    }
+    throw new ApiError(message, response.status);
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) return;
+    yield decoder.decode(value, { stream: true });
+  }
+}
+
 export const api = {
   ingestText: (text: string) => request<ParsedDocument>("/ingest/text", json("POST", { text })),
   ingestUrl: (url: string) => request<ParsedDocument>("/ingest/url", json("POST", { url })),
