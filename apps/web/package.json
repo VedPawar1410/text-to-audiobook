@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test --test-reporter=spec \"src/**/*.test.ts\""
   },
   "dependencies": {
     "motion": "^12.43.0",

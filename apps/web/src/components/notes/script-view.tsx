@@ -3,20 +3,10 @@
 import { useState } from "react";
 import { LABEL } from "@/components/ui";
 import { api, type DocumentDetail, type Segment } from "@/lib/api";
+import { groupBlocks } from "@/lib/blocks";
 import { EMOTIONS } from "@/lib/vocabulary";
 
 type Props = { document: DocumentDetail; onChange: (segment: Segment) => void };
-
-/** Consecutive segments of the same block (a paragraph, one character's speech…). */
-function groupBlocks(segments: Segment[]): Segment[][] {
-  const blocks: Segment[][] = [];
-  for (const segment of segments) {
-    const current = blocks.at(-1);
-    if (current && current[0].block_index === segment.block_index) current.push(segment);
-    else blocks.push([segment]);
-  }
-  return blocks;
-}
 
 export function ScriptView({ document, onChange }: Props) {
   const [editing, setEditing] = useState<number | null>(null);

@@ -59,6 +59,72 @@ body::after {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/*
+ * Read-along. The player toggles .is-current-line / .is-current-word directly on the
+ * DOM (no React re-render per word); :has() dims every other line while one is spoken.
+ */
+.read-along .seg {
+  transition: color 400ms var(--ease-spring);
+}
+.read-along:has(.is-current-line) .seg {
+  color: var(--color-ink-muted);
+}
+.read-along .seg.is-current-line {
+  color: var(--color-ink);
+}
+.read-along .word {
+  border-radius: 0.3em;
+  box-decoration-break: clone;
+  transition: background-color 120ms linear, box-shadow 120ms linear;
+}
+.read-along .playable .word {
+  cursor: pointer;
+}
+.read-along .playable .word:hover {
+  background: rgb(244 237 226 / 0.06);
+}
+.read-along .word.is-current-word {
+  background: rgb(255 181 71 / 0.22);
+  box-shadow: 0 0 0 0.12em rgb(255 181 71 / 0.22);
+}
+
+/* The player's scrubber: tungsten progress on a hairline track */
+.scrubber {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.scrubber::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-tungsten) var(--progress), rgb(244 237 226 / 0.12) var(--progress));
+}
+.scrubber::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 999px;
+  background: var(--color-ink);
+}
+.scrubber::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(244 237 226 / 0.12);
+}
+.scrubber::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-tungsten);
+}
+.scrubber::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-ink);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
