@@ -3,8 +3,35 @@
 import re
 import threading
 
+import numpy as np
+
 from app.director.schema import CastMember, DocumentDirection, LineDirection, LineDirections
 from app.llm import LLMError
+from app.tts.base import RenderResult, Voice, WordTiming
+
+
+class FakeEngine:
+    """Predictable audio: 0.2 s per word at speed 1. Records every render."""
+
+    name = "fake"
+    sample_rate = 24_000
+
+    def __init__(self, fail_on: str | None = None):
+        self.calls: list[tuple[str, str, float]] = []
+        self.fail_on = fail_on
+
+    def voices(self):
+        return [Voice("am_michael", "Michael", "male", "American")]
+
+    def render(self, text: str, voice: str, speed: float = 1.0) -> RenderResult:
+        if self.fail_on and self.fail_on in text:
+            raise RuntimeError("synthesis exploded")
+        self.calls.append((text, voice, speed))
+        per_word = 0.2 / speed
+        words = text.split()
+        audio = np.full(int(self.sample_rate * per_word * len(words)), 0.1, dtype=np.float32)
+        timings = [WordTiming(w, i * per_word, (i + 1) * per_word) for i, w in enumerate(words)]
+        return RenderResult(audio, self.sample_rate, timings)
 
 
 def cast_member(id: str, gender: str = "male", age: str = "adult", accent: str = "american") -> CastMember:

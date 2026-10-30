@@ -4,6 +4,7 @@ Flow for the UI: POST /ingest/* (preview) → POST /documents (save)
 → POST /documents/{id}/direct (starts in the background) → poll GET /documents/{id}.
 """
 
+import shutil
 import uuid
 from collections.abc import Callable
 
@@ -24,6 +25,7 @@ from app.documents.schemas import (
 from app.documents.service import create_document, run_direction
 from app.llm import LLM, LLMError, make_llm
 from app.models import Document, Segment
+from app.render.service import active_job, document_dir
 from app.structure.models import ParsedDocument
 from app.tts.kokoro_voices import VOICES_BY_ID
 
@@ -77,8 +79,12 @@ def update_document(document_id: uuid.UUID, body: DocumentUpdate, db: Session = 
 
 @router.delete("/{document_id}", status_code=204)
 def delete_document(document_id: uuid.UUID, db: Session = Depends(get_db)):
-    db.delete(_get_editable(db, document_id))
+    document = _get_editable(db, document_id)
+    if active_job(db, document.id):
+        raise HTTPException(status_code=409, detail="Cancel the render before deleting.")
+    db.delete(document)
     db.commit()
+    shutil.rmtree(document_dir(document_id), ignore_errors=True)  # its rendered audio
 
 
 @router.patch("/{document_id}/personas/{cast_id}", response_model=PersonaOut)
@@ -122,6 +128,8 @@ def direct(
     document = _get(db, document_id)
     if document.status == "directing":
         raise HTTPException(status_code=409, detail="The director is already working on this document.")
+    if active_job(db, document.id):
+        raise HTTPException(status_code=409, detail="Wait for the render to finish before directing again.")
     try:
         llm = llm_factory(x_llm_key)
     except LLMError as error:

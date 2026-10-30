@@ -23,4 +23,6 @@ Base.metadata.create_all(engine)
 def empty_tables():
     yield
     with engine.begin() as connection:
-        connection.execute(text("TRUNCATE documents, sections, segments, personas RESTART IDENTITY CASCADE"))
+        connection.execute(
+            text("TRUNCATE documents, sections, segments, personas, render_jobs, chapter_audio RESTART IDENTITY CASCADE")
+        )

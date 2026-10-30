@@ -9,11 +9,14 @@ import { useDocument } from "@/lib/hooks";
 import { formatDuration, genreLabel } from "@/lib/vocabulary";
 import { CastSection } from "./cast-card";
 import { DirectingState } from "./directing-state";
+import { RenderPanel } from "./render-panel";
 import { ScriptView } from "./script-view";
 
 export function DirectorsNotes({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { document, setDocument, error, reload } = useDocument(id);
+  // Bumped on every cast or line edit, so the audiobook panel re-checks what's stale
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     if (document) window.document.title = `${document.title ?? "Untitled"} · Narrate`;
@@ -22,10 +25,13 @@ export function DirectorsNotes({ params }: { params: Promise<{ id: string }> }) 
   if (error && !document) return <ErrorNote>{error}</ErrorNote>;
   if (!document) return <NotesSkeleton />;
 
-  const replacePersona = (persona: Persona) =>
+  const replacePersona = (persona: Persona) => {
+    setRevision((r) => r + 1);
     setDocument((d) => d && { ...d, personas: d.personas.map((p) => (p.cast_id === persona.cast_id ? persona : p)) });
+  };
 
-  const replaceSegment = (segment: Segment) =>
+  const replaceSegment = (segment: Segment) => {
+    setRevision((r) => r + 1);
     setDocument(
       (d) =>
         d && {
@@ -36,6 +42,7 @@ export function DirectorsNotes({ params }: { params: Promise<{ id: string }> }) 
           })),
         },
     );
+  };
 
   return (
     <article className="flex flex-col gap-14">
@@ -51,6 +58,7 @@ export function DirectorsNotes({ params }: { params: Promise<{ id: string }> }) 
         <>
           {document.warning && <p className="rounded-2xl border border-hairline px-4 py-3 text-sm text-ink-muted">{document.warning}</p>}
           <Overview document={document} />
+          <RenderPanel document={document} revision={revision} />
           <CastSection document={document} onChange={replacePersona} />
           <ScriptView document={document} onChange={replaceSegment} />
         </>

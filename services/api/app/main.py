@@ -7,6 +7,7 @@ from app.db import db_is_reachable
 from app.documents.routes import router as documents_router
 from app.documents.service import init_db
 from app.ingest.routes import router as ingest_router
+from app.render.routes import router as render_router
 from app.tts.routes import router as tts_router
 
 # Uvicorn only configures its own loggers; without this, the app's warnings
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="text-to-audiobook API", lifespan=lifespan)
 app.include_router(ingest_router)
 app.include_router(documents_router)
+app.include_router(render_router)
 app.include_router(tts_router)
 
 

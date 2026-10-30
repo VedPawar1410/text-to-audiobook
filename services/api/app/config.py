@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,6 +11,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://localhost/text_to_audiobook"
     # "cpu" is faster than "mps" for Kokoro on an M1 (measured in PR 3)
     tts_device: str = "cpu"
+    # Rendered audio: clip cache + chapter files (git-ignored)
+    data_dir: Path = Path(__file__).resolve().parents[1] / "data"
 
     # Free key from aistudio.google.com. A request can override it with an X-LLM-Key header.
     gemini_api_key: str | None = None
