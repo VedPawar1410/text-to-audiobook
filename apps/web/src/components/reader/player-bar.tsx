@@ -21,13 +21,14 @@ const NEXT = "M12 3.5v9M3.5 3.5 10 8l-6.5 4.5z";
 const PLAY = "M5 3.5v9l7.5-4.5z";
 const PAUSE = "M5 3.5h2v9H5zM9 3.5h2v9H9z";
 const HIGHLIGHT = "M2.5 13.5h11M4 10.5l5.5-7 3 2.5-5.5 7H4z";
+const ASK = "M2.5 4.5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v4.5a2 2 0 0 1-2 2H7l-3 2.5v-2.5h0a1.5 1.5 0 0 1-1.5-1.5z";
 
 function Chip({ children }: { children: ReactNode }) {
   return <span className="font-mono text-[11px] text-ink-muted">{children}</span>;
 }
 
 /** Fixed glass bar: scrubber, chapter, transport, speed and highlight. */
-export function PlayerBar({ player }: { player: ReadAlong }) {
+export function PlayerBar({ player, onAsk }: { player: ReadAlong; onAsk: () => void }) {
   const { chapter, ready, playing, time, duration } = player;
   const progress = duration ? (Math.min(time, duration) / duration) * 100 : 0;
 
@@ -91,6 +92,9 @@ export function PlayerBar({ player }: { player: ReadAlong }) {
           </div>
 
           <div className="ml-auto flex items-center sm:ml-0">
+            <button type="button" aria-label="Ask about the text" onClick={onAsk} className={ICON_BUTTON}>
+              <Icon d={ASK} />
+            </button>
             <label htmlFor="speed-picker" className="sr-only">
               Speed
             </label>

@@ -87,6 +87,16 @@ class FakeLLM:
             raise LLMError("busy")
         return LineDirections(lines=[self.labeller(i) for i in indices if i not in self.skip])
 
+    answer = "Kang has seen every possible ending, so he speaks as if this one is already decided."
+
+    def stream_text(self, *, system, prompt):
+        with self._lock:
+            self.prompts.append(prompt)
+        if self.fail_document:
+            raise LLMError("The AI service is unavailable right now.")
+        for word in self.answer.split(" "):
+            yield word + " "
+
     @property
     def line_prompts(self) -> list[str]:
         return [p for p in self.prompts if "Label every one of these lines" in p]

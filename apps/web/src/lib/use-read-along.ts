@@ -339,6 +339,15 @@ export function useReadAlong(doc: DocumentDetail, chapters: Chapter[]) {
     [paint, sync],
   );
 
+  const pause = useCallback(() => audioRef.current?.pause(), []);
+
+  /** The line at the voice's position (even with highlighting off): context for questions. */
+  const currentSegment = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return null;
+    return cuesRef.current[position(cuesRef.current, audio.currentTime).cue]?.segmentId ?? null;
+  }, []);
+
   // Lock-screen and headphone controls on phones
   useEffect(() => {
     if (!chapter || !("mediaSession" in navigator)) return;
@@ -383,6 +392,8 @@ export function useReadAlong(doc: DocumentDetail, chapters: Chapter[]) {
     resumed,
     level: playing ? level : 0,
     toggle,
+    pause,
+    currentSegment,
     seek,
     step,
     seekTo,

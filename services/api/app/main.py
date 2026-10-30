@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.ask.routes import router as ask_router
 from app.db import db_is_reachable
 from app.documents.routes import router as documents_router
 from app.documents.service import init_db
@@ -25,6 +26,7 @@ app = FastAPI(title="text-to-audiobook API", lifespan=lifespan)
 app.include_router(ingest_router)
 app.include_router(documents_router)
 app.include_router(render_router)
+app.include_router(ask_router)
 app.include_router(tts_router)
 
 

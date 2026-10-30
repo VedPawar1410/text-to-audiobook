@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { use, useCallback, useEffect, useMemo } from "react";
+import { use, useCallback, useEffect, useMemo, useState } from "react";
 import { Bezel } from "@/components/bezel";
 import { PillLink, SECONDARY } from "@/components/pill-link";
 import { ErrorNote, Eyebrow, Skeleton } from "@/components/ui";
 import type { Chapter, DocumentDetail } from "@/lib/api";
 import { useDocument, useRender } from "@/lib/hooks";
 import { useReadAlong } from "@/lib/use-read-along";
+import { AskPanel, type AskContext } from "./ask-panel";
 import { PlayerBar } from "./player-bar";
 import { ReaderText } from "./reader-text";
 
@@ -38,7 +39,47 @@ export function Reader({ params }: { params: Promise<{ id: string }> }) {
 
 function ReadAlongView({ document, chapters }: { document: DocumentDetail; chapters: Chapter[] }) {
   const player = useReadAlong(document, chapters);
-  const { toggle, step, setHighlight, highlight, seekTo } = player;
+  const { toggle, step, setHighlight, highlight, seekTo, pause, currentSegment } = player;
+  const [ask, setAsk] = useState<AskContext | null>(null);
+  const [pill, setPill] = useState<{ x: number; y: number; text: string; segmentId: number } | null>(null);
+
+  const openAsk = useCallback(
+    (context: AskContext) => {
+      pause(); // the reader stopped to think: so does the voice
+      setPill(null);
+      setAsk(context);
+    },
+    [pause],
+  );
+  const closeAsk = useCallback(() => setAsk(null), []);
+
+  // Selecting text offers "Ask about this". selectionchange (debounced) also works for
+  // long-press selection on phones, where mouseup never fires.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const update = () => {
+      const selection = window.getSelection();
+      const text = selection?.toString().trim() ?? "";
+      const node = selection?.anchorNode;
+      const anchor = node instanceof Element ? node : node?.parentElement;
+      const segment = anchor?.closest<HTMLElement>(".read-along [data-seg]");
+      if (!selection || selection.isCollapsed || text.length < 2 || !segment) return setPill(null);
+      const rect = selection.getRangeAt(0).getBoundingClientRect();
+      setPill({ x: rect.left + rect.width / 2, y: rect.bottom, text: text.slice(0, 2000), segmentId: Number(segment.dataset.seg) });
+    };
+    const onChange = () => {
+      clearTimeout(timer);
+      timer = setTimeout(update, 250);
+    };
+    const hide = () => setPill(null); // a fixed pill would drift away from its text
+    window.document.addEventListener("selectionchange", onChange);
+    window.addEventListener("scroll", hide, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      window.document.removeEventListener("selectionchange", onChange);
+      window.removeEventListener("scroll", hide);
+    };
+  }, []);
 
   const playable = useMemo(() => new Set(player.ready.map((c) => c.section_id)), [player.ready]);
   const names = useMemo(
@@ -99,7 +140,21 @@ function ReadAlongView({ document, chapters }: { document: DocumentDetail; chapt
         </button>
       )}
 
-      <PlayerBar player={player} />
+      {pill && !ask && (
+        <button
+          type="button"
+          // mousedown would clear the selection before the click lands
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => openAsk({ selection: pill.text, segmentId: pill.segmentId })}
+          style={{ left: pill.x, top: pill.y + 10 }}
+          className="fixed z-40 min-h-11 -translate-x-1/2 cursor-pointer rounded-full bg-tungsten px-5 text-sm font-medium text-on-tungsten shadow-[0_8px_30px_rgb(0_0_0/0.4)]"
+        >
+          Ask about this
+        </button>
+      )}
+
+      <PlayerBar player={player} onAsk={() => openAsk({ selection: null, segmentId: currentSegment() })} />
+      <AskPanel documentId={document.id} context={ask} onClose={closeAsk} />
     </>
   );
 }

@@ -7,6 +7,7 @@ Handles what free-tier models actually do (seen while building PR 5): temporary
 
 import logging
 import time
+from collections.abc import Iterator
 from typing import Protocol, TypeVar
 
 import httpx
@@ -31,6 +32,8 @@ class LLMError(RuntimeError):
 
 class LLM(Protocol):
     def generate_json(self, *, system: str, prompt: str, schema: type[T]) -> T: ...
+
+    def stream_text(self, *, system: str, prompt: str) -> Iterator[str]: ...
 
 
 class GeminiLLM:
@@ -85,6 +88,45 @@ class GeminiLLM:
                     last_error = error
                     log.warning("Network problem with %s (attempt %d): %r", model, attempt + 1, error)
 
+                if attempt < self._attempts - 1:
+                    time.sleep(self._backoff * 2**attempt)
+
+        raise LLMError(f"The AI service is unavailable right now. Last error: {last_error}")
+
+    def stream_text(self, *, system: str, prompt: str) -> Iterator[str]:
+        """Plain text, chunk by chunk as the model writes it.
+
+        Retries and model fallback apply until the first chunk arrives. After that the
+        reader is already seeing the answer, so an error ends it instead of restarting.
+        """
+        config = types.GenerateContentConfig(
+            system_instruction=system,
+            temperature=0.5,
+            thinking_config=types.ThinkingConfig(thinking_level="low"),
+        )
+        last_error: Exception | None = None
+
+        for model in self._models:
+            for attempt in range(self._attempts):
+                started = False
+                try:
+                    for chunk in self._client.models.generate_content_stream(model=model, contents=prompt, config=config):
+                        if chunk.text:
+                            started = True
+                            yield chunk.text
+                    return
+                except (errors.APIError, httpx.TransportError) as error:
+                    if started:
+                        raise LLMError("The answer was cut off. Please ask again.") from error
+                    last_error = error
+                    code = getattr(error, "code", None)
+                    if code == 404:
+                        break
+                    if code in (401, 403):
+                        raise LLMError("The Gemini API key was rejected. Check GEMINI_API_KEY.") from error
+                    if code is not None and code not in RETRYABLE:
+                        raise LLMError(f"Gemini rejected the request ({code}).") from error
+                    log.warning("Streaming from %s failed (attempt %d): %r", model, attempt + 1, error)
                 if attempt < self._attempts - 1:
                     time.sleep(self._backoff * 2**attempt)
 
