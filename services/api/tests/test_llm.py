@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+import httpx
 import pytest
 from google.genai import errors
 from pydantic import BaseModel
@@ -51,6 +52,13 @@ def test_retired_model_falls_through_to_the_next():
 
     assert ask(llm).word == "ok"
     assert calls == ["first", "second"]
+
+
+def test_timeouts_and_dropped_connections_are_retried():
+    llm, calls = gemini([httpx.ReadTimeout("slow"), httpx.ConnectError("dropped"), OK])
+
+    assert ask(llm).word == "ok"
+    assert len(calls) == 3
 
 
 def test_invalid_json_is_asked_again():

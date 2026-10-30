@@ -1,6 +1,6 @@
 import { Bezel } from "@/components/bezel";
 import { HeroStage } from "@/components/hero-stage";
-import { PillLink } from "@/components/pill-link";
+import { PillLink, SECONDARY } from "@/components/pill-link";
 import { Reveal } from "@/components/reveal";
 
 const STEPS = [
@@ -44,8 +44,13 @@ export default function Home() {
               for every character and performs it, while you read along word by word.
             </p>
           </Reveal>
-          <Reveal delay={0.3} className="mt-10">
-            <PillLink href="#how">See how it works</PillLink>
+          <Reveal delay={0.3} className="mt-10 flex flex-wrap items-center gap-2">
+            <PillLink href="/new" icon="right">
+              Start a new book
+            </PillLink>
+            <a href="#how" className={SECONDARY}>
+              See how it works
+            </a>
           </Reveal>
         </div>
 

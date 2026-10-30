@@ -9,6 +9,7 @@ import logging
 import time
 from typing import Protocol, TypeVar
 
+import httpx
 from google import genai
 from google.genai import errors, types
 from pydantic import BaseModel, ValidationError
@@ -19,6 +20,9 @@ T = TypeVar("T", bound=BaseModel)
 log = logging.getLogger(__name__)
 
 RETRYABLE = {429, 500, 502, 503, 504}
+# Without a timeout a hung request blocks forever (seen while building PR 6).
+# Generous enough for the whole-document pass on a long book.
+REQUEST_TIMEOUT_MS = 120_000
 
 
 class LLMError(RuntimeError):
@@ -39,7 +43,9 @@ class GeminiLLM:
         backoff_seconds: float = 2.0,
         client=None,
     ):
-        self._client = client or genai.Client(api_key=api_key)
+        self._client = client or genai.Client(
+            api_key=api_key, http_options=types.HttpOptions(timeout=REQUEST_TIMEOUT_MS)
+        )
         self._models = models
         self._attempts = attempts_per_model
         self._backoff = backoff_seconds
@@ -75,6 +81,9 @@ class GeminiLLM:
                 except ValidationError as error:  # malformed JSON: simply ask again
                     last_error = error
                     log.warning("Invalid JSON from %s (attempt %d)", model, attempt + 1)
+                except httpx.TransportError as error:  # timeouts and dropped connections
+                    last_error = error
+                    log.warning("Network problem with %s (attempt %d): %r", model, attempt + 1, error)
 
                 if attempt < self._attempts - 1:
                     time.sleep(self._backoff * 2**attempt)

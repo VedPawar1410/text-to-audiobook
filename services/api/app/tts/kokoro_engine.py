@@ -7,7 +7,6 @@ so CPU is the default (see settings.tts_device).
 import threading
 
 import numpy as np
-from kokoro import KModel, KPipeline
 
 from app.tts.base import RenderResult, Voice
 from app.tts.kokoro_voices import VOICE_IDS, VOICES
@@ -22,15 +21,19 @@ class KokoroEngine:
 
     def __init__(self, device: str = "cpu"):
         self._device = device
-        self._model: KModel | None = None
-        self._pipelines: dict[str, KPipeline] = {}
+        self._model = None
+        self._pipelines: dict = {}
         # A torch model isn't safe to call from several threads at once.
         self._lock = threading.Lock()
 
     def voices(self) -> list[Voice]:
         return VOICES
 
-    def _pipeline(self, lang_code: str) -> KPipeline:
+    def _pipeline(self, lang_code: str):
+        # Imported here, not at the top: torch takes seconds to import, and listing
+        # voices (e.g. on a cold server) shouldn't pay for it.
+        from kokoro import KModel, KPipeline
+
         # One shared model (loaded on first use, ~4s); one light text pipeline per accent.
         if self._model is None:
             self._model = KModel(repo_id=REPO_ID).to(self._device).eval()
