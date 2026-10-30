@@ -24,7 +24,7 @@ const HIGHLIGHT = "M2.5 13.5h11M4 10.5l5.5-7 3 2.5-5.5 7H4z";
 const ASK = "M2.5 4.5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v4.5a2 2 0 0 1-2 2H7l-3 2.5v-2.5h0a1.5 1.5 0 0 1-1.5-1.5z";
 
 function Chip({ children }: { children: ReactNode }) {
-  return <span className="font-mono text-[11px] text-ink-muted">{children}</span>;
+  return <span className="shrink-0 font-mono text-[11px] text-ink-muted">{children}</span>;
 }
 
 /** Fixed glass bar: scrubber, chapter, transport, speed and highlight. */
@@ -50,7 +50,7 @@ export function PlayerBar({ player, onAsk }: { player: ReadAlong; onAsk: () => v
         {/* Phones: chapter and time get their own row above the controls */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 sm:flex-nowrap md:gap-3">
           <Orb level={player.level} className="hidden w-10 shrink-0 sm:block" />
-          <div className="flex min-w-0 basis-full items-baseline gap-3 sm:block sm:flex-1 sm:basis-0">
+          <div className="flex min-w-0 basis-full items-center gap-3 sm:flex-1 sm:basis-0">
             <label htmlFor="chapter-picker" className="sr-only">
               Chapter
             </label>
@@ -61,7 +61,7 @@ export function PlayerBar({ player, onAsk }: { player: ReadAlong; onAsk: () => v
                 const next = ready.find((c) => c.section_id === Number(e.target.value));
                 if (next) void player.load(next, 0, playing);
               }}
-              className="min-w-0 flex-1 cursor-pointer truncate rounded-lg bg-transparent text-sm text-ink sm:w-full"
+              className="min-h-11 min-w-0 flex-1 cursor-pointer truncate rounded-lg bg-transparent text-sm text-ink"
             >
               {ready.map((c) => (
                 <option key={c.section_id} value={c.section_id}>

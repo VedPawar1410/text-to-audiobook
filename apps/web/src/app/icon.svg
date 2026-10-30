@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The hero's tungsten orb on the stage colour -->
+  <defs>
+    <radialGradient id="orb" cx="38%" cy="32%" r="72%">
+      <stop offset="0" stop-color="#ffe2ad"/>
+      <stop offset="0.45" stop-color="#ffb547"/>
+      <stop offset="1" stop-color="#6b3f0c"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#0b0908"/>
+  <circle cx="32" cy="32" r="19" fill="url(#orb)"/>
+</svg>
