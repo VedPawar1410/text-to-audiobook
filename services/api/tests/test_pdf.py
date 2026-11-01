@@ -19,7 +19,7 @@ def test_prose_pdf_keeps_paragraphs_and_cleans_page_furniture():
         "7",
     ])  # fmt: skip
 
-    text, title = text_from_pdf(make_pdf([page], title="The Citadel"))
+    text, title, _ = text_from_pdf(make_pdf([page], title="The Citadel"))
     doc = parse_text(text)
 
     assert title == "The Citadel"
@@ -38,7 +38,7 @@ def test_repeated_running_header_is_removed():
         for n in (1, 2, 3)
     ]
 
-    text, _ = text_from_pdf(make_pdf(pages))
+    text, _, _ = text_from_pdf(make_pdf(pages))
 
     assert "DRAFT" not in text and "of 3" not in text
     assert "Paragraph on page 2." in text
@@ -60,7 +60,7 @@ def test_screenplay_pdf_is_parsed_as_screenplay():
         "EXT. VOID - CONTINUOUS",
     ])  # fmt: skip
 
-    text, _ = text_from_pdf(make_pdf([page]))
+    text, _, _ = text_from_pdf(make_pdf([page]))
     doc = parse_text(text)
 
     assert doc.format == "screenplay"
@@ -78,3 +78,9 @@ def test_pdf_without_text_is_rejected():
 def test_non_pdf_bytes_are_rejected():
     with pytest.raises(IngestError, match="readable PDF"):
         text_from_pdf(b"definitely not a pdf")
+
+
+def test_author_comes_from_the_pdf_metadata():
+    _, title, author = text_from_pdf(make_pdf([page_of_lines(["Hello there."])], title="Report", author="Ada Byron"))
+
+    assert (title, author) == ("Report", "Ada Byron")

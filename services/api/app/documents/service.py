@@ -3,7 +3,7 @@ import time
 import uuid
 from dataclasses import asdict, dataclass, field, replace
 
-from sqlalchemy import update
+from sqlalchemy import text, update
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
@@ -43,6 +43,9 @@ def init_db() -> None:
     try:
         Base.metadata.create_all(engine)
         with SessionLocal() as db:
+            # create_all never changes an existing table, and this POC has no migration tool:
+            # columns added after v1 are added here, idempotently
+            db.execute(text("ALTER TABLE documents ADD COLUMN IF NOT EXISTS author VARCHAR"))
             db.execute(
                 update(Document)
                 .where(Document.status == "directing")
@@ -60,7 +63,7 @@ def init_db() -> None:
 
 
 def create_document(db: Session, parsed: ParsedDocument) -> Document:
-    document = Document(title=parsed.title, format=parsed.format, stats=parsed.stats.model_dump())
+    document = Document(title=parsed.title, author=parsed.author, format=parsed.format, stats=parsed.stats.model_dump())
     position = 0
     for section_position, parsed_section in enumerate(parsed.sections):
         section = Section(position=section_position, title=parsed_section.title)
@@ -106,6 +109,8 @@ def _direct(db: Session, document: Document, llm: LLM) -> None:
 
     performances = {p.index: p for p in direct_lines(llm, direction, lines, on_progress=report)}
 
+    if not document.author and direction.author and direction.author.strip():
+        document.author = direction.author.strip()  # never overrides metadata or the reader's own edit
     document.genre = direction.genre
     document.subgenre = direction.subgenre
     document.summary = direction.summary

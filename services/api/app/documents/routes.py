@@ -76,7 +76,12 @@ def get_document(document_id: uuid.UUID, db: Session = Depends(get_db)):
 @router.patch("/{document_id}", response_model=DocumentSummary)
 def update_document(document_id: uuid.UUID, body: DocumentUpdate, db: Session = Depends(get_db)):
     document = _get_editable(db, document_id)
-    document.title = body.title.strip()
+    if body.title is not None:
+        if not body.title.strip():
+            raise HTTPException(status_code=422, detail="The title can't be empty.")
+        document.title = body.title.strip()
+    if body.author is not None:
+        document.author = body.author.strip() or None
     db.commit()
     return document
 

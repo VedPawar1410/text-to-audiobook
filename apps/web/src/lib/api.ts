@@ -11,6 +11,7 @@ export type Stats = {
 
 export type ParsedDocument = {
   title: string | null;
+  author: string | null;
   format: "prose" | "screenplay";
   sections: {
     title: string | null;
@@ -24,6 +25,7 @@ export type Status = "parsed" | "directing" | "directed" | "failed";
 export type DocumentSummary = {
   id: string;
   title: string | null;
+  author: string | null;
   format: "prose" | "screenplay";
   status: Status;
   error: string | null;
@@ -185,7 +187,9 @@ export const api = {
   listDocuments: () => request<DocumentSummary[]>("/documents"),
   getDocument: (id: string) => request<DocumentDetail>(`/documents/${id}`),
   direct: (id: string) => request<DocumentSummary>(`/documents/${id}/direct`, { method: "POST" }),
-  rename: (id: string, title: string) => request<DocumentSummary>(`/documents/${id}`, json("PATCH", { title })),
+  /** Only the fields sent change; an empty author clears it. */
+  updateDocument: (id: string, patch: { title?: string; author?: string }) =>
+    request<DocumentSummary>(`/documents/${id}`, json("PATCH", patch)),
   remove: (id: string) => request<void>(`/documents/${id}`, { method: "DELETE" }),
   updatePersona: (id: string, castId: string, patch: Partial<Pick<Persona, "voice" | "speed">>) =>
     request<Persona>(`/documents/${id}/personas/${encodeURIComponent(castId)}`, json("PATCH", patch)),

@@ -243,6 +243,7 @@ function BookCard({ document, selecting, selected, onToggle, onDelete }: BookCar
                 </Link>
               )}
             </h2>
+            {document.author && <p className="mt-1 truncate font-read text-ink-muted italic">by {document.author}</p>}
           </div>
           {selecting ? (
             <span className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center">

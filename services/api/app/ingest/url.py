@@ -64,8 +64,8 @@ def fetch_page(url: str) -> tuple[str, str, bool]:
     raise IngestError("That link redirects too many times.")
 
 
-def text_from_html(html: str, url: str | None = None) -> tuple[str, str | None]:
-    """Return (article text as markdown, page title)."""
+def text_from_html(html: str, url: str | None = None) -> tuple[str, str | None, str | None]:
+    """Return (article text as markdown, page title, author from the byline or page metadata)."""
     text = trafilatura.extract(
         html,
         url=url,
@@ -81,9 +81,9 @@ def text_from_html(html: str, url: str | None = None) -> tuple[str, str | None]:
         raise IngestError("Couldn't find readable article text on that page.")
     text = re.sub(r"\\?\[edit\\?\]", "", text)  # Wikipedia's section "[edit]" links
     metadata = trafilatura.extract_metadata(html, default_url=url)
-    return text, (metadata.title if metadata else None)
+    return text, (metadata.title if metadata else None), (metadata.author if metadata else None)
 
 
-def text_from_url(url: str) -> tuple[str, str | None]:
+def text_from_url(url: str) -> tuple[str, str | None, str | None]:
     body, final_url, is_plain = fetch_page(url)
-    return (body, None) if is_plain else text_from_html(body, final_url)
+    return (body, None, None) if is_plain else text_from_html(body, final_url)

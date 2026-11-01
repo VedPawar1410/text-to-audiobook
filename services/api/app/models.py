@@ -19,6 +19,7 @@ class Document(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     title: Mapped[str | None]
+    author: Mapped[str | None]
     format: Mapped[str] = mapped_column(String(20))  # prose | screenplay
     status: Mapped[str] = mapped_column(String(20), default="parsed")  # parsed → directing → directed | failed
     error: Mapped[str | None] = mapped_column(Text)

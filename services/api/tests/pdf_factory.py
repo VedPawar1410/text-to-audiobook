@@ -5,7 +5,7 @@ def _escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
 
-def make_pdf(pages: list[list[tuple[float, float, str]]], title: str | None = None) -> bytes:
+def make_pdf(pages: list[list[tuple[float, float, str]]], title: str | None = None, author: str | None = None) -> bytes:
     """Each page is a list of (x, y, text) lines in points (US Letter, origin bottom-left)."""
     objects: list[bytes] = []
 
@@ -34,7 +34,9 @@ def make_pdf(pages: list[list[tuple[float, float, str]]], title: str | None = No
     kids = b" ".join(b"%d 0 R" % n for n in page_numbers)
     objects[pages_obj - 1] = b"<< /Type /Pages /Kids [%s] /Count %d >>" % (kids, len(page_numbers))
     objects[catalog - 1] = b"<< /Type /Catalog /Pages %d 0 R >>" % pages_obj
-    info = add(b"<< /Title (%s) >>" % _escape(title).encode("latin-1")) if title else None
+    fields = [(b"Title", title), (b"Author", author)]
+    entries = b" ".join(b"/%s (%s)" % (key, _escape(value).encode("latin-1")) for key, value in fields if value)
+    info = add(b"<< %s >>" % entries) if entries else None
 
     out = bytearray(b"%PDF-1.4\n")
     offsets = []

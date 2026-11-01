@@ -61,7 +61,8 @@ def _escape(value: str) -> str:
 def metadata(document: Document, chapters: list[tuple[str, float]]) -> str:
     """An ffmetadata file: the book's tags, then each chapter's span in milliseconds."""
     title = _escape(document.title or "Audiobook")
-    lines = [";FFMETADATA1", f"title={title}", f"album={title}", "artist=Narrate"]
+    artist = _escape(document.author or "Narrate")
+    lines = [";FFMETADATA1", f"title={title}", f"album={title}", f"artist={artist}", f"album_artist={artist}"]
     if document.genre:
         lines.append(f"genre={_escape(document.genre)}")
     start = 0
@@ -117,7 +118,7 @@ def export_audiobook(db: Session, document: Document, extension: str) -> Path:
     chapters = _chapters(db, document)
     if not chapters:
         raise NotReady
-    recipe = [extension, document.title, document.genre, [(chapter_title(s), c.fingerprint) for s, c, _ in chapters]]
+    recipe = [extension, document.title, document.author, document.genre, [(chapter_title(s), c.fingerprint) for s, c, _ in chapters]]
     key = hashlib.sha256(json.dumps(recipe).encode()).hexdigest()[:16]
     folder = document_dir(document.id) / "exports"
     target = folder / f"{key}.{extension}"

@@ -37,7 +37,7 @@ def test_ingest_markdown_file_uses_heading_as_title():
 def test_ingest_text_file_falls_back_to_file_name_as_title():
     response = client.post("/ingest/file", files={"file": ("my_notes.txt", b"Just one line.", "text/plain")})
 
-    assert response.json()["title"] == "my_notes"
+    assert response.json()["title"] == "my notes"  # underscores in a file name become spaces
 
 
 def test_ingest_pdf_file():
