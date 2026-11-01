@@ -134,7 +134,7 @@ function ReadAlongView({ document, chapters }: { document: DocumentDetail; chapt
         <button
           type="button"
           onClick={player.follow}
-          className="fixed bottom-36 left-1/2 z-30 min-h-11 -translate-x-1/2 cursor-pointer rounded-full border border-hairline bg-stage/90 px-5 text-sm backdrop-blur-xl md:bottom-40"
+          className="fixed bottom-48 left-1/2 z-30 min-h-11 -translate-x-1/2 cursor-pointer rounded-full border border-hairline bg-stage/90 px-5 text-sm backdrop-blur-xl md:bottom-40"
         >
           ↓ Follow the voice
         </button>

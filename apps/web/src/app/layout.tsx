@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { Nav } from "@/components/nav";
 import "./globals.css";
@@ -26,6 +26,9 @@ export const metadata: Metadata = {
   title: "Narrate: every text, performed",
   description: "Turn any text into an expressive, multi-voice audiobook with read-along.",
 };
+
+// Phone browsers tint their toolbars to match the stage instead of default grey
+export const viewport: Viewport = { themeColor: "#0b0908", colorScheme: "dark" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

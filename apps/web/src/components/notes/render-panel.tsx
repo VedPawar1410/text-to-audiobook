@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Bezel } from "@/components/bezel";
 import { PillButton, PillLink, SECONDARY } from "@/components/pill-link";
 import { ErrorNote, LABEL } from "@/components/ui";
@@ -19,8 +19,49 @@ function clock(seconds: number) {
   return h ? `${h}:${String(m).padStart(2, "0")}:${rest}` : `${m}:${rest}`;
 }
 
+/** One shared element for every chapter row: starting a chapter stops the one before. */
+function usePreview() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const current = useRef<number | null>(null); // the chapter the element has loaded
+  const [playing, setPlaying] = useState<number | null>(null);
+  const getAudio = useCallback(() => (audioRef.current ??= new Audio()), []);
+
+  // The element's own events drive the button: switching source fires a late "pause"
+  // that would otherwise undo an optimistic "playing"
+  useEffect(() => {
+    const audio = getAudio();
+    const onPlay = () => setPlaying(current.current);
+    const onStop = () => setPlaying(null);
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onStop);
+    audio.addEventListener("ended", onStop);
+    return () => {
+      audio.pause();
+      audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("pause", onStop);
+      audio.removeEventListener("ended", onStop);
+    };
+  }, [getAudio]);
+
+  const toggle = useCallback(
+    (sectionId: number, url: string) => {
+      const audio = getAudio();
+      if (current.current === sectionId && !audio.paused) return audio.pause();
+      if (current.current !== sectionId || !audio.src.endsWith(url)) {
+        current.current = sectionId;
+        audio.src = url;
+      }
+      audio.play().catch(() => setPlaying(null));
+    },
+    [getAudio],
+  );
+
+  return { playing, toggle };
+}
+
 export function RenderPanel({ document, revision }: { document: DocumentDetail; revision: number }) {
   const { status, reload } = useRender(document.id, revision);
+  const preview = usePreview();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -126,7 +167,12 @@ export function RenderPanel({ document, revision }: { document: DocumentDetail; 
           {chapters.length > 0 && (
             <ol className="flex flex-col divide-y divide-hairline border-t border-hairline">
               {chapters.map((chapter) => (
-                <ChapterRow key={chapter.section_id} documentId={document.id} chapter={chapter} />
+                <ChapterRow
+                  key={chapter.section_id}
+                  chapter={chapter}
+                  playing={preview.playing === chapter.section_id}
+                  onToggle={() => preview.toggle(chapter.section_id, chapterAudioUrl(document.id, chapter))}
+                />
               ))}
             </ol>
           )}
@@ -179,7 +225,11 @@ function Downloads({ documentId, seconds, stale }: { documentId: string; seconds
   );
 }
 
-function ChapterRow({ documentId, chapter }: { documentId: string; chapter: Chapter }) {
+const PLAY = "M5 3.5v9l7.5-4.5z";
+const PAUSE = "M5 3.5h2v9H5zM9 3.5h2v9H9z";
+
+function ChapterRow({ chapter, playing, onToggle }: { chapter: Chapter; playing: boolean; onToggle: () => void }) {
+  const title = chapter.title ?? "Opening";
   const state = chapter.stale
     ? "Changed since recording"
     : chapter.status === "ready"
@@ -189,21 +239,27 @@ function ChapterRow({ documentId, chapter }: { documentId: string; chapter: Chap
         : "Not recorded yet";
 
   return (
-    <li className="grid gap-3 py-4 md:grid-cols-[1fr_auto] md:items-center">
-      <div className="flex min-w-0 items-baseline gap-3">
-        <span className={`${LABEL} shrink-0`}>{String(chapter.position + 1).padStart(2, "0")}</span>
-        <span className="truncate">{chapter.title ?? "Opening"}</span>
-        <span className={`shrink-0 font-mono text-xs ${chapter.stale ? "text-tungsten" : "text-ink-muted"}`}>{state}</span>
+    <li className="flex items-center gap-4 py-3">
+      <span className={`${LABEL} shrink-0`}>{String(chapter.position + 1).padStart(2, "0")}</span>
+      <div className="min-w-0 flex-1">
+        {/* Scene headings run long: two lines on phones beat an ellipsis */}
+        <p className="line-clamp-2 md:truncate">{title}</p>
+        <p className={`font-mono text-xs ${chapter.stale ? "text-tungsten" : "text-ink-muted"}`}>{state}</p>
       </div>
       {chapter.status === "ready" && (
-        // Native controls for now; the read-along player arrives in PR 8
-        <audio
-          controls
-          preload="none"
-          src={chapterAudioUrl(documentId, chapter)}
-          aria-label={`Play ${chapter.title ?? "opening"}`}
-          className="h-11 w-full md:w-80"
-        />
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={`${playing ? "Pause" : "Play"} ${title}`}
+          aria-pressed={playing}
+          className={`flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-[background-color,border-color,color,transform] duration-300 ease-spring active:scale-95 ${
+            playing ? "border-tungsten bg-tungsten text-on-tungsten" : "border-hairline text-ink hover:border-tungsten/50"
+          }`}
+        >
+          <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor">
+            <path d={playing ? PAUSE : PLAY} />
+          </svg>
+        </button>
       )}
     </li>
   );
