@@ -8,6 +8,10 @@ from app.models import Document, Segment
 # one question stays well inside the free tier's tokens per minute (~200k chars ≈ 50k tokens).
 LOOKAHEAD_LINES = 2
 MAX_CONTEXT_CHARS = 200_000
+# The fallback (Groq's free tier: 8k tokens a minute, prompt and answer together) gets
+# the most recent ~3k tokens of text and the last exchange only
+FALLBACK_CONTEXT_CHARS = 12_000
+FALLBACK_HISTORY_TURNS = 2
 
 SYSTEM = """You are a knowledgeable, friendly reading companion inside an audiobook app. The reader paused to ask about what they're reading.
 
@@ -19,7 +23,7 @@ SYSTEM = """You are a knowledgeable, friendly reading companion inside an audiob
 - Formatting: plain paragraphs. **Bold** for names or key terms, and a short bulleted list ("- item"), are fine when they genuinely help. No headings, tables or code blocks."""
 
 
-def _text_so_far(spoken: list[Segment], index: int | None, names: dict[str, str]) -> str:
+def _text_so_far(spoken: list[Segment], index: int | None, names: dict[str, str], max_chars: int) -> str:
     if index is None:
         return "(The reader's position is unknown, so no text is shared. Answer from the summary.)"
 
@@ -32,7 +36,7 @@ def _text_so_far(spoken: list[Segment], index: int | None, names: dict[str, str]
     here += [line(s) for s in spoken[index + 1 : index + LOOKAHEAD_LINES + 1]]
     before = "\n".join(line(s) for s in spoken[:index])
     # A very long book: the reader's line always stays; trim the oldest text, from a line start
-    budget = max(0, MAX_CONTEXT_CHARS - sum(len(h) + 1 for h in here))
+    budget = max(0, max_chars - sum(len(h) + 1 for h in here))
     if len(before) > budget:
         before = "(Earlier text omitted.)\n" + before[len(before) - budget :].split("\n", 1)[-1]
     return "\n".join(filter(None, [before, *here]))
@@ -44,6 +48,7 @@ def build_prompt(
     selection: str | None,
     segment_id: int | None,
     history: list[tuple[str, str]],
+    max_chars: int | None = None,  # default: MAX_CONTEXT_CHARS
 ) -> str:
     names = {p.cast_id: p.display_name for p in document.personas}
     spoken = [s for s in document.segments if s.text]
@@ -53,7 +58,7 @@ def build_prompt(
         f"Work: {document.title or 'Untitled'} ({document.genre or document.format})",
         f"About the work: {document.summary or 'Not analysed yet.'}",
         f"Characters: {', '.join(n for c, n in names.items() if c != 'NARRATOR') or 'none'}",
-        f"The text so far:\n{_text_so_far(spoken, index, names)}",
+        f"The text so far:\n{_text_so_far(spoken, index, names, max_chars or MAX_CONTEXT_CHARS)}",
     ]
     if selection:
         parts.append(f'The reader selected this passage: "{selection.strip()}"')

@@ -72,5 +72,11 @@ Cast:
 Emotions you may use:
 {emotions}
 
+Write one row per line and nothing else (no header, no code fence), exactly like this:
+index|speaker|emotion|intensity|pace|pause_before_ms|pause_after_ms|stressed words
+- speaker: NARRATOR or a cast id. intensity: 1 subtle, 2 clear, 3 strong. pace: slow, normal or fast.
+- stressed words: up to two words from the line, comma-separated, or nothing.
+Example: 12|MARA|anxious|2|fast|200|300|ship
+
 {context_block}Label every one of these lines, using its [index]:
 {render_lines(lines)}"""

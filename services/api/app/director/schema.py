@@ -43,6 +43,3 @@ class LineDirection(BaseModel):
     pause_after_ms: int
     emphasis: list[str]
 
-
-class LineDirections(BaseModel):
-    lines: list[LineDirection]

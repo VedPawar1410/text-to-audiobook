@@ -4,6 +4,7 @@ import os
 
 TEST_DATABASE = "text_to_audiobook_test"
 os.environ["DATABASE_URL"] = f"postgresql+psycopg://localhost/{TEST_DATABASE}"  # before app imports
+os.environ["GROQ_API_KEY"] = ""  # tests never call a real provider
 
 import psycopg  # noqa: E402
 import pytest  # noqa: E402

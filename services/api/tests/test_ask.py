@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app import llm as llm_module
 from app.ask import prompts
-from app.documents.routes import get_llm_factory
+from app.documents.routes import get_fallback_llm, get_llm_factory
 from app.main import app
 from tests.fakes import FakeLLM, cast_member, direction
 
@@ -126,3 +126,20 @@ def test_asking_without_a_key_is_a_clear_error(fake, monkeypatch):
 
     assert response.status_code == 400
     assert "GEMINI_API_KEY" in response.json()["detail"]
+
+
+def test_when_gemini_fails_before_answering_the_fallback_answers_from_less_text(fake):
+    llm, document_id = fake
+    llm.fail_document = True
+    backup = FakeLLM()
+    backup.answer = "Answered by the fallback."
+    app.dependency_overrides[get_fallback_llm] = lambda: backup
+
+    response = client.post(
+        f"/documents/{document_id}/ask",
+        json={"question": "Who?", "segment_id": segment_id(document_id, "Answer me!")},
+    )
+
+    assert response.text.strip() == "Answered by the fallback."
+    assert ">>> Thor: Answer me! <<<" in backup.prompts[-1]
+    assert len(backup.prompts[-1]) < len(llm.prompts[-1]) + 1  # never more than Gemini was sent

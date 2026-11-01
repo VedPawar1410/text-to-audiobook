@@ -19,7 +19,7 @@ Turn any long text (scripts, articles, books, PDFs) into an expressive, multi-vo
 Free by default:
 
 - **Narration:** [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M), running locally (Apache-2.0).
-- **AI director and Q&A:** a free Gemini API key that you bring yourself.
+- **AI director and Q&A:** a free Gemini API key that you bring yourself. Add an optional free Groq key and Groq takes over whenever Gemini is overloaded or its free daily quota runs out. `LABEL_PROVIDER=groq` makes Groq label lines first (faster; Gemini still reads the whole book).
 - **Paid voice engines** (OpenAI, ElevenLabs) are planned as optional upgrades.
 
 ## Stack
@@ -29,7 +29,7 @@ Free by default:
 | Web | Next.js (App Router) · TypeScript · Tailwind · Motion |
 | API | Python · FastAPI · SQLAlchemy |
 | Data | Postgres (local) · audio files on disk |
-| AI | Kokoro TTS (local) · Gemini / Claude / OpenAI via your own API key |
+| AI | Kokoro TTS (local) · Gemini, with Groq as a fallback, via your own free API keys |
 
 ## Repo layout
 

@@ -1,6 +1,6 @@
 import pytest
 
-from app.director.director import CHUNK_LINES, NARRATOR, Line, direct_document, direct_lines
+from app.director.director import CHUNK_LINES, NARRATOR, Line, direct_document, direct_lines, parse_rows
 from app.llm import LLMError
 from tests.fakes import FakeLLM, cast_member, direction, label
 
@@ -110,3 +110,33 @@ def test_document_pass_normalises_ids_and_adds_missing_parser_speakers():
     assert [m.id for m in result.cast] == ["KANG", "THOR"]
     assert "KANG, THOR" in llm.prompts[0]  # the prompt pins the parser's speaker ids
     assert "scifi_action" in llm.prompts[0]  # and offers the genre list
+
+
+def test_rows_are_parsed_and_broken_rows_skipped():
+    text = "\n".join([
+        "```",
+        "0|NARRATOR|Ominous|2|Normal|0|500|storm, dark",
+        "[1]|mara|urgent|3|fast|300|200|",
+        "2|MARA|furious|3|fast|0|0|",  # not an emotion we have
+        "3|TOMAS|weary|one|slow|0|0|",  # intensity isn't a number
+        "Here are your labels!",
+    ])  # fmt: skip
+
+    labels = parse_rows(text)
+
+    assert [label.index for label in labels] == [0, 1]
+    assert labels[0].emotion == "ominous" and labels[0].emphasis == ["storm", "dark"]
+    assert labels[1].speaker == "MARA" and labels[1].emphasis == []
+
+
+def test_failed_chunks_go_to_the_fallback_in_small_pieces():
+    lines = [Line(i, "paragraph", f"Sentence {i}.") for i in range(CHUNK_LINES + 10)]
+    fallback = FakeLLM(batch_lines=50)  # e.g. Groq: fewer lines a request (8k tokens a minute)
+
+    performances = direct_lines(
+        FakeLLM(fail_chunks_starting_at={0}), direction(cast=[]), lines, fallback=fallback
+    )
+
+    assert all(p.labelled for p in performances)
+    assert len(fallback.line_prompts) == 3  # the failed 150-line chunk, in the fallback's 50-line pieces
+    assert "[50]" in fallback.line_prompts[1] and "Context, already performed" in fallback.line_prompts[1]

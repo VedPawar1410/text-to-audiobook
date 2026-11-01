@@ -129,3 +129,19 @@ def test_runs_interrupted_by_a_restart_are_marked_failed():
 
     body = client.get(f"/documents/{document_id}").json()
     assert body["status"] == "failed" and "restart" in body["error"]
+
+
+def test_label_provider_groq_labels_lines_while_gemini_reads_the_whole_text(fake_llm, monkeypatch):
+    from app.config import settings
+    from app.documents.routes import get_fallback_llm
+
+    groq = FakeLLM(batch_lines=100)
+    app.dependency_overrides[get_fallback_llm] = lambda: groq
+    monkeypatch.setattr(settings, "label_provider", "groq")
+    document_id = save_fan_script()
+
+    client.post(f"/documents/{document_id}/direct")
+
+    assert client.get(f"/documents/{document_id}").json()["status"] == "directed"
+    assert groq.line_prompts and not fake_llm.line_prompts
+    assert any("Read this whole" in p for p in fake_llm.prompts)
