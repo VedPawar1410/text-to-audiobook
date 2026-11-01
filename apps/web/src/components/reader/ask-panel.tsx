@@ -1,9 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { LABEL } from "@/components/ui";
 import { askStream, type AskTurn } from "@/lib/api";
+import { type Inline, parseMarkdown } from "@/lib/markdown";
+import { advanceWords, revealRate, wordsLeft } from "@/lib/reveal";
 
 export type AskContext = { selection: string | null; segmentId: number | null };
 
@@ -44,9 +46,13 @@ function Conversation({ documentId, context, onClose }: { documentId: string; co
   useEffect(() => {
     input.current?.focus();
   }, []);
-  useEffect(() => {
+  // Keep the newest words in view, as questions are added and as the answer reveals
+  const followAnswer = useCallback(() => {
     end.current?.scrollIntoView({ block: "end" });
-  }, [turns]);
+  }, []);
+  useEffect(() => {
+    followAnswer();
+  }, [turns, followAnswer]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -122,9 +128,7 @@ function Conversation({ documentId, context, onClose }: { documentId: string; co
                 {turn.text}
               </p>
             ) : (
-              <p key={i} className="font-read text-lg leading-relaxed whitespace-pre-wrap">
-                {turn.text || <span className="text-ink-muted">Thinking…</span>}
-              </p>
+              <Answer key={i} text={turn.text} live={i === turns.length - 1} onGrow={followAnswer} />
             ),
           )}
         </div>
@@ -173,5 +177,98 @@ function Conversation({ documentId, context, onClose }: { documentId: string; co
         </button>
       </form>
     </>
+  );
+}
+
+/**
+ * Reveals the answer word by word at a steady pace (lib/reveal.ts), whatever size the
+ * bursts from the model are. Only the newest answer animates; earlier ones show in full.
+ */
+function useSteadyReveal(text: string, live: boolean): string {
+  const reduce = useReducedMotion();
+  const animate = live && !reduce;
+  const [shown, setShown] = useState(animate ? 0 : text.length);
+  const shownRef = useRef(shown);
+
+  useEffect(() => {
+    if (!animate || shownRef.current >= text.length) return;
+    let frame = 0;
+    let last = performance.now();
+    let owed = 0; // fractional words carried between frames
+    const tick = (now: number) => {
+      owed += (revealRate(wordsLeft(text, shownRef.current)) * (now - last)) / 1000;
+      last = now;
+      const whole = Math.floor(owed);
+      if (whole > 0) {
+        owed -= whole;
+        shownRef.current = advanceWords(text, shownRef.current, whole);
+        setShown(shownRef.current);
+      }
+      if (shownRef.current < text.length) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [text, animate]);
+
+  return animate ? text.slice(0, shown) : text;
+}
+
+function Answer({ text, live, onGrow }: { text: string; live: boolean; onGrow: () => void }) {
+  const shown = useSteadyReveal(text, live);
+  const revealing = shown.length < text.length;
+
+  useEffect(() => {
+    if (live) onGrow();
+  }, [shown, live, onGrow]);
+
+  if (!text) return <p className="font-read text-lg text-ink-muted">Thinking…</p>;
+  return (
+    // aria-busy: screen readers announce the answer once, when it's complete, not word by word
+    <div aria-busy={revealing} className="flex flex-col gap-3 font-read text-lg leading-relaxed">
+      {parseMarkdown(shown).map((block, i) =>
+        block.kind === "paragraph" ? (
+          <p key={i} className="whitespace-pre-line">
+            <Inlines runs={block.inlines} />
+          </p>
+        ) : block.ordered ? (
+          <ol key={i} className="flex list-decimal flex-col gap-1.5 pl-6 marker:font-mono marker:text-sm marker:text-ink-muted">
+            {block.items.map((item, j) => (
+              <li key={j} className="pl-1">
+                <Inlines runs={item} />
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <ul key={i} className="flex flex-col gap-1.5">
+            {block.items.map((item, j) => (
+              <li
+                key={j}
+                className="relative pl-5 before:absolute before:top-[0.68em] before:left-1 before:h-1.5 before:w-1.5 before:rounded-full before:bg-tungsten/70"
+              >
+                <Inlines runs={item} />
+              </li>
+            ))}
+          </ul>
+        ),
+      )}
+    </div>
+  );
+}
+
+function Inlines({ runs }: { runs: Inline[] }) {
+  return runs.map((run, i) =>
+    run.bold ? (
+      <strong key={i} className="font-semibold text-ink">
+        {run.text}
+      </strong>
+    ) : run.italic ? (
+      <em key={i}>{run.text}</em>
+    ) : run.code ? (
+      <code key={i} className="rounded bg-ink/[0.06] px-1 font-mono text-[0.8em]">
+        {run.text}
+      </code>
+    ) : (
+      <Fragment key={i}>{run.text}</Fragment>
+    ),
   );
 }
