@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { type KeyboardEvent, use, useEffect, useState } from "react";
 import { Bezel } from "@/components/bezel";
 import { PillButton } from "@/components/pill-link";
 import { ErrorNote, Eyebrow, LABEL, Skeleton } from "@/components/ui";
@@ -46,7 +46,7 @@ export function DirectorsNotes({ params }: { params: Promise<{ id: string }> }) 
 
   return (
     <article className="flex flex-col gap-14">
-      <Header document={document} onRenamed={(title) => setDocument((d) => d && { ...d, title })} />
+      <Header document={document} onSaved={(saved) => setDocument((d) => d && { ...d, title: saved.title, author: saved.author })} />
 
       {document.status === "directing" && <DirectingState progress={document.progress} sentences={document.stats.sentences} />}
 
@@ -67,25 +67,53 @@ export function DirectorsNotes({ params }: { params: Promise<{ id: string }> }) 
   );
 }
 
-function Header({ document, onRenamed }: { document: DocumentDetail; onRenamed: (title: string) => void }) {
+type Saved = { title: string | null; author: string | null };
+
+// Inline fields that look like text until hovered or focused; Enter or leaving the field saves
+const INLINE =
+  "rounded-lg bg-transparent transition-colors duration-300 ease-spring hover:bg-ink/[0.04] focus:bg-ink/[0.04] focus:outline-none focus-visible:ring-1 focus-visible:ring-tungsten/60 disabled:hover:bg-transparent";
+
+function Header({ document, onSaved }: { document: DocumentDetail; onSaved: (saved: Saved) => void }) {
   const [title, setTitle] = useState(document.title ?? "");
+  const [author, setAuthor] = useState(document.author ?? "");
   const [error, setError] = useState<string | null>(null);
   const { stats } = document;
+  const locked = document.status === "directing";
 
-  async function save() {
-    const next = title.trim();
-    if (!next || next === document.title) {
-      setTitle(document.title ?? "");
-      return;
-    }
+  // A document reloaded with a new author (the director found one) updates the field
+  const [seenAuthor, setSeenAuthor] = useState(document.author);
+  if (document.author !== seenAuthor) {
+    setSeenAuthor(document.author);
+    setAuthor(document.author ?? "");
+  }
+
+  async function save(patch: { title?: string; author?: string }) {
     try {
-      await api.rename(document.id, next);
-      onRenamed(next);
+      const saved = await api.updateDocument(document.id, patch);
+      onSaved({ title: saved.title, author: saved.author });
       setError(null);
     } catch (e) {
       setError((e as Error).message);
     }
   }
+
+  function saveTitle() {
+    const next = title.trim();
+    if (!next || next === document.title) return setTitle(document.title ?? "");
+    void save({ title: next });
+  }
+
+  function saveAuthor() {
+    const next = author.trim();
+    setAuthor(next);
+    if (next !== (document.author ?? "")) void save({ author: next });
+  }
+
+  const enterSaves = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    e.currentTarget.blur();
+  };
 
   return (
     <header>
@@ -96,25 +124,41 @@ function Header({ document, onRenamed }: { document: DocumentDetail; onRenamed: 
       <label htmlFor="document-title" className="sr-only">
         Title
       </label>
-      {/* A textarea so long titles wrap; field-sizing grows it to fit. Enter saves. */}
+      {/* A textarea so long titles wrap; field-sizing grows it to fit */}
       <textarea
         id="document-title"
         rows={1}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        onBlur={save}
-        onKeyDown={(e) => {
-          if (e.key !== "Enter") return;
-          e.preventDefault();
-          e.currentTarget.blur();
-        }}
-        disabled={document.status === "directing"}
+        onBlur={saveTitle}
+        onKeyDown={enterSaves}
+        disabled={locked}
         placeholder="Untitled"
+        title="Click to rename"
         aria-describedby={error ? "title-error" : undefined}
-        className="mt-5 w-full resize-none rounded-lg bg-transparent font-display text-4xl leading-[1.05] font-light tracking-tight text-ink [field-sizing:content] placeholder:text-ink-faint supports-[field-sizing:content]:overflow-hidden md:text-6xl"
+        className={`${INLINE} mt-5 -ml-2 w-[calc(100%+0.5rem)] resize-none px-2 font-display text-4xl leading-[1.05] font-light tracking-tight text-ink [field-sizing:content] placeholder:text-ink-faint supports-[field-sizing:content]:overflow-hidden md:text-6xl`}
       />
+      <div className="mt-2 flex items-baseline gap-2 font-read text-xl text-ink-muted italic md:text-2xl">
+        <span aria-hidden className={author ? "" : "text-ink-faint"}>
+          by
+        </span>
+        <label htmlFor="document-author" className="sr-only">
+          Author
+        </label>
+        <input
+          id="document-author"
+          value={author}
+          onChange={(e) => setAuthor(e.target.value)}
+          onBlur={saveAuthor}
+          onKeyDown={enterSaves}
+          disabled={locked}
+          placeholder="add the author"
+          maxLength={200}
+          className={`${INLINE} min-w-[10ch] px-1.5 py-0.5 text-ink-muted [field-sizing:content] placeholder:text-ink-faint`}
+        />
+      </div>
       {error && (
-        <p id="title-error" className="mt-2 text-sm text-danger">
+        <p id="title-error" role="alert" className="mt-2 text-sm text-danger">
           {error}
         </p>
       )}

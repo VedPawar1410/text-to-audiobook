@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.structure import parse_text
+from app.structure import clean_title, parse_text
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -135,3 +135,26 @@ def test_a_short_tail_joins_the_part_before_and_short_chapters_stay_whole():
     doc = parse_text("# The Book\n\n## Chapter One\n\n" + "\n\n".join([paragraph] * 20) + "\n\n## Chapter Two\n\n" + tail)
 
     assert [s.title for s in doc.sections] == ["Chapter One", "Chapter Two · Part 1", "Chapter Two · Part 2"]
+
+
+def test_titles_from_file_metadata_are_cleaned():
+    assert clean_title("Microsoft Word - All Tomorrows.doc") == "All Tomorrows"
+    assert clean_title("my_field_notes") == "my field notes"
+    assert clean_title("The Kang Dynasty: a fan script.pdf") == "The Kang Dynasty: a fan script"
+    assert clean_title("Word - by word") == "Word - by word"  # only known app prefixes are stripped
+    assert clean_title("   ") is None
+
+
+def test_an_author_named_near_the_top_is_found():
+    doc = parse_text("All Tomorrows\n\nby C. M. Kosemen\n\nA billion years of human evolution, told as history.")
+
+    assert doc.title == "All Tomorrows"
+    assert doc.author == "C. M. Kosemen"
+    assert parse_text("The bridge was built by hand.\n\nNobody remembers who.").author is None
+    assert parse_text("Some text.", author="  Given Author ").author == "Given Author"
+
+
+def test_a_byline_on_the_first_line_is_never_taken_as_the_title():
+    doc = parse_text("by Ana Ruiz\n\nThe harbour was quiet.", title="Microsoft Word - Harbour Notes.doc")
+
+    assert (doc.title, doc.author) == ("Harbour Notes", "Ana Ruiz")

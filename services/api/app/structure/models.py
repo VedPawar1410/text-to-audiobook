@@ -39,6 +39,7 @@ class Stats(BaseModel):
 
 class ParsedDocument(BaseModel):
     title: str | None
+    author: str | None = None
     format: Literal["prose", "screenplay"]
     sections: list[Section]
     stats: Stats

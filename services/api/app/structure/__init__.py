@@ -36,9 +36,34 @@ def _leading_title(text: str) -> tuple[str | None, str]:
         return match[1].strip(), rest
     if line.startswith("#") or line[-1] in ".!?,;" or line.endswith(" TO:"):
         return None, text
-    if SLUGLINE.match(line) or TRANSITION.match(line) or CHAPTER.match(line):
+    if SLUGLINE.match(line) or TRANSITION.match(line) or CHAPTER.match(line) or BYLINE.match(line):
         return None, text
     return line, rest
+
+
+# Titles that come from file metadata are often the authoring app's, not the book's
+APP_PREFIX = re.compile(r"^(?:Microsoft\s+(?:Word|PowerPoint|Excel)|Pages|Google\s+Docs)\s*[-–:]\s*", re.IGNORECASE)
+FILE_EXTENSION = re.compile(r"\.(?:docx?|pdf|txt|md|rtf|odt|pages|epub)$", re.IGNORECASE)
+BYLINE = re.compile(r"^\s*(?:written\s+)?by\s+([^\n]{2,80}?)\s*$", re.IGNORECASE)
+
+
+def clean_title(title: str | None) -> str | None:
+    """'Microsoft Word - All Tomorrows.doc' -> 'All Tomorrows'; 'my_book' -> 'my book'."""
+    if not title:
+        return None
+    title = FILE_EXTENSION.sub("", APP_PREFIX.sub("", title.strip()))
+    if " " not in title:
+        title = title.replace("_", " ")
+    return re.sub(r"\s+", " ", title).strip() or None
+
+
+def find_byline(text: str) -> str | None:
+    """An author named near the top: a line like "by C. M. Kosemen" in the first few lines."""
+    lines = [line for line in text.split("\n")[:12] if line.strip()][:6]
+    for line in lines:
+        if match := BYLINE.match(line.strip("*_# ")):
+            return match[1].strip(" .,")
+    return None
 
 
 def _words(blocks) -> int:
@@ -89,7 +114,7 @@ def _stats(text: str, sections: list[Section]) -> Stats:
     )
 
 
-def parse_text(text: str, title: str | None = None) -> ParsedDocument:
+def parse_text(text: str, title: str | None = None, author: str | None = None) -> ParsedDocument:
     text = normalize(text)
     detected_title, body = _leading_title(text)
 
@@ -103,7 +128,8 @@ def parse_text(text: str, title: str | None = None) -> ParsedDocument:
     sections = split_long_sections(sections)
     _finalize(sections)
     return ParsedDocument(
-        title=detected_title or title,
+        title=clean_title(detected_title or title),
+        author=(author or "").strip() or find_byline(text),
         format=doc_format,
         sections=sections,
         stats=_stats(text, sections),

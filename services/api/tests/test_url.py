@@ -46,7 +46,7 @@ ARTICLE = """
 
 
 def test_article_text_is_extracted_without_page_chrome():
-    text, title = text_from_html(ARTICLE, "https://example.com/kang")
+    text, title, _ = text_from_html(ARTICLE, "https://example.com/kang")
 
     assert title.startswith("The Kang Dynasty, Explained")
     assert "Every timeline ends." in text
@@ -60,7 +60,7 @@ def test_wikipedia_edit_links_and_markdown_escapes_are_removed():
          and has returned many times since then across the long history of the comics.</p>
     </article></body></html>"""
 
-    text, _ = text_from_html(html)
+    text, _, _ = text_from_html(html)
     blocks = [b.text for s in parse_text(text).sections for b in s.blocks]
 
     assert not any("edit" in b for b in blocks)
@@ -69,7 +69,7 @@ def test_wikipedia_edit_links_and_markdown_escapes_are_removed():
 
 
 def test_article_headings_survive_as_sections():
-    text, _ = text_from_html(ARTICLE, "https://example.com/kang")
+    text, _, _ = text_from_html(ARTICLE, "https://example.com/kang")
 
     doc = parse_text(text)
 

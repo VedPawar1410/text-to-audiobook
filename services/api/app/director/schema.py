@@ -30,6 +30,7 @@ class DocumentDirection(BaseModel):
     narrator_accent: Accent
     narrator_style: str
     cast: list[CastMember]
+    author: str | None = None  # only when the text names it
 
 
 class LineDirection(BaseModel):

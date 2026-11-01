@@ -38,6 +38,32 @@ def test_rename_document(directed_id):
     assert client.patch(f"/documents/{directed_id}", json={"title": ""}).status_code == 422
 
 
+def test_set_and_clear_the_author_without_touching_the_title(directed_id):
+    title = client.get(f"/documents/{directed_id}").json()["title"]
+
+    client.patch(f"/documents/{directed_id}", json={"author": "  Jonathan Majors Fan  "})
+    after_set = client.get(f"/documents/{directed_id}").json()
+    client.patch(f"/documents/{directed_id}", json={"author": ""})
+
+    assert after_set["author"] == "Jonathan Majors Fan" and after_set["title"] == title
+    assert client.get(f"/documents/{directed_id}").json()["author"] is None
+
+
+def test_the_director_fills_in_an_author_the_text_names_but_never_replaces_one():
+    llm = FakeLLM(document=direction(author="Ada Byron"))
+    app.dependency_overrides[get_llm_factory] = lambda: (lambda key: llm)
+    found = client.post("/documents", json=client.post("/ingest/text", json={"text": FAN_SCRIPT}).json()).json()["id"]
+    given = client.post(
+        "/documents", json=client.post("/ingest/text", json={"text": FAN_SCRIPT, "author": "The Reader"}).json()
+    ).json()["id"]
+    for document_id in (found, given):
+        client.post(f"/documents/{document_id}/direct")
+    app.dependency_overrides.clear()
+
+    assert client.get(f"/documents/{found}").json()["author"] == "Ada Byron"
+    assert client.get(f"/documents/{given}").json()["author"] == "The Reader"
+
+
 def test_recast_a_persona(directed_id):
     response = client.patch(f"/documents/{directed_id}/personas/KANG", json={"voice": "am_onyx", "speed": 0.9})
 

@@ -52,6 +52,7 @@ Choose the genre from:
 {cast_rule}
 Choose a narrator gender and accent that suit the material, and describe the narrator's style in one sentence.
 Summarise the work in two or three sentences.
+Author: the author's name only if the text itself states it (a byline, title page or "by ..."). Otherwise null: never guess.
 
 TEXT:
 {text}"""

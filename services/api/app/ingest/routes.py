@@ -24,14 +24,15 @@ MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 class TextIn(BaseModel):
     text: str = Field(min_length=1)  # deliberately no maximum length
     title: str | None = None
+    author: str | None = None
 
 
 class UrlIn(BaseModel):
     url: HttpUrl
 
 
-def _parse(text: str, title: str | None) -> ParsedDocument:
-    document = parse_text(text, title=title)
+def _parse(text: str, title: str | None, author: str | None = None) -> ParsedDocument:
+    document = parse_text(text, title=title, author=author)
     if document.stats.words == 0:
         raise HTTPException(status_code=422, detail="No readable text found.")
     return document
@@ -39,16 +40,16 @@ def _parse(text: str, title: str | None) -> ParsedDocument:
 
 @router.post("/text", response_model=ParsedDocument)
 def ingest_text(body: TextIn):
-    return _parse(body.text, body.title)
+    return _parse(body.text, body.title, body.author)
 
 
-def _file_to_text(name: str, data: bytes) -> tuple[str, str | None]:
+def _file_to_text(name: str, data: bytes) -> tuple[str, str | None, str | None]:
     extension = Path(name).suffix.lower()
     if extension in TEXT_EXTENSIONS:
-        return decode_text(data), Path(name).stem
+        return decode_text(data), Path(name).stem, None
     if extension == ".pdf":
-        text, title = text_from_pdf(data)
-        return text, title or Path(name).stem
+        text, title, author = text_from_pdf(data)
+        return text, title or Path(name).stem, author
     raise HTTPException(status_code=415, detail="Supported files: .txt, .md and .pdf")
 
 
@@ -59,8 +60,8 @@ async def ingest_file(file: UploadFile):
         raise HTTPException(status_code=413, detail="Files are limited to 25 MB.")
     try:
         # PDF extraction and parsing are CPU work: keep them off the event loop
-        text, title = await run_in_threadpool(_file_to_text, file.filename or "upload.txt", data)
-        return await run_in_threadpool(_parse, text, title)
+        text, title, author = await run_in_threadpool(_file_to_text, file.filename or "upload.txt", data)
+        return await run_in_threadpool(_parse, text, title, author)
     except IngestError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
 
@@ -68,7 +69,7 @@ async def ingest_file(file: UploadFile):
 @router.post("/url", response_model=ParsedDocument)
 def ingest_url(body: UrlIn):
     try:
-        text, title = text_from_url(str(body.url))
+        text, title, author = text_from_url(str(body.url))
     except IngestError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    return _parse(text, title)
+    return _parse(text, title, author)

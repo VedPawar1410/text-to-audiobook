@@ -8,7 +8,10 @@ from app.director.vocabulary import EmotionName
 
 
 class DocumentUpdate(BaseModel):
-    title: str = Field(min_length=1, max_length=200)
+    """Only the fields sent are changed. An empty author clears it."""
+
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    author: str | None = Field(default=None, max_length=200)
 
 
 class PersonaUpdate(BaseModel):
@@ -77,6 +80,7 @@ class DocumentSummary(BaseModel):
 
     id: uuid.UUID
     title: str | None
+    author: str | None
     format: str
     status: str
     error: str | None

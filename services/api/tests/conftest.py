@@ -13,10 +13,10 @@ with psycopg.connect(dbname="postgres", autocommit=True) as connection:
     if not connection.execute("SELECT 1 FROM pg_database WHERE datname = %s", (TEST_DATABASE,)).fetchone():
         connection.execute(f'CREATE DATABASE "{TEST_DATABASE}"')
 
-import app.models  # noqa: E402,F401  (registers the tables)
-from app.db import Base, engine  # noqa: E402
+from app.db import engine  # noqa: E402
+from app.documents.service import init_db  # noqa: E402
 
-Base.metadata.create_all(engine)
+init_db()  # the app's own startup: creates tables, then adds any newer columns
 
 
 @pytest.fixture(autouse=True)

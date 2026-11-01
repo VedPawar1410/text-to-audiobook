@@ -127,6 +127,7 @@ function ReadAlongView({ document, chapters }: { document: DocumentDetail; chapt
         <h1 className="mt-5 font-display text-4xl leading-[1.05] font-light tracking-tight md:text-6xl">
           {document.title ?? "Untitled"}
         </h1>
+        {document.author && <p className="mt-2 font-read text-xl text-ink-muted italic">by {document.author}</p>}
         <p className="mt-4 text-sm text-ink-muted">
           {player.resumed && "Picking up where you left off. "}Tap any word to hear it from there.
           <span className="hidden md:inline"> Space plays and pauses, ← → move by sentence.</span>

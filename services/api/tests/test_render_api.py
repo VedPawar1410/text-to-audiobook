@@ -246,3 +246,13 @@ def test_export_metadata_escapes_ffmetadata_syntax():
     assert "title=Part\\=1\\; \\#2\\\\x" in text
     assert "START=0\nEND=1500\ntitle=A\\=B" in text
     assert "START=1500\nEND=3750\ntitle=C" in text
+    assert "artist=Narrate" in text  # no author known
+
+
+def test_the_author_is_the_export_artist():
+    from app.models import Document
+    from app.render.export import metadata
+
+    text = metadata(Document(title="All Tomorrows", author="C. M. Kosemen"), [("Part 1", 1.0)])
+
+    assert "artist=C. M. Kosemen\nalbum_artist=C. M. Kosemen" in text

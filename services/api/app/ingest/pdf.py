@@ -56,8 +56,8 @@ def clean_pdf_pages(pages: list[str]) -> str:
     return re.sub(r"(?<=[a-z])-\n\s*(?=[a-z])", "", text)  # "high-\nest" -> "highest"
 
 
-def text_from_pdf(data: bytes) -> tuple[str, str | None]:
-    """Return (text, title from the PDF's metadata, if any)."""
+def text_from_pdf(data: bytes) -> tuple[str, str | None, str | None]:
+    """Return (text, title, author), the last two from the PDF's metadata if it has them."""
     try:
         reader = PdfReader(io.BytesIO(data))
         if reader.is_encrypted and not reader.decrypt(""):
@@ -69,5 +69,7 @@ def text_from_pdf(data: bytes) -> tuple[str, str | None]:
     if not any(page.strip() for page in pages):
         raise IngestError("No text found in this PDF. Scanned (image-only) PDFs aren't supported yet.")
 
-    title = (reader.metadata.title or "").strip() if reader.metadata else ""
-    return clean_pdf_pages(pages), title or None
+    metadata = reader.metadata
+    title = (metadata.title or "").strip() if metadata else ""
+    author = (metadata.author or "").strip() if metadata else ""
+    return clean_pdf_pages(pages), title or None, author or None
