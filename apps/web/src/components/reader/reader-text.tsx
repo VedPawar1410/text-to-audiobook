@@ -2,6 +2,7 @@
 
 import { Fragment, memo, type MouseEvent } from "react";
 import type { DocumentDetail, Segment } from "@/lib/api";
+import type { HighlightStyle } from "@/lib/highlight-style";
 import { groupBlocks } from "@/lib/blocks";
 import { displayWords } from "@/lib/timing";
 
@@ -9,7 +10,7 @@ type Props = {
   document: DocumentDetail;
   playable: Set<number>; // section ids with recorded audio
   names: Record<string, string>;
-  highlight: boolean;
+  highlightStyle: HighlightStyle;
   onSeek: (segmentId: number, wordIndex: number) => void;
 };
 
@@ -18,7 +19,7 @@ type Props = {
  * one delegated click handler (not one per word) turns any word into a seek target.
  * Memoised: playback state changes must never re-render this.
  */
-export const ReaderText = memo(function ReaderText({ document, playable, names, highlight, onSeek }: Props) {
+export const ReaderText = memo(function ReaderText({ document, playable, names, highlightStyle, onSeek }: Props) {
   function onClick(event: MouseEvent<HTMLDivElement>) {
     if (!window.getSelection()?.isCollapsed) return; // the reader is selecting text, not seeking
     const target = event.target as HTMLElement;
@@ -29,7 +30,11 @@ export const ReaderText = memo(function ReaderText({ document, playable, names, 
   }
 
   return (
-    <div onClick={onClick} className={`read-along mx-auto mt-14 flex max-w-[44rem] flex-col gap-16 ${highlight ? "" : "highlight-off"}`}>
+    <div
+      onClick={onClick}
+      data-highlight={highlightStyle}
+      className="read-along mx-auto mt-14 flex max-w-[44rem] flex-col gap-16"
+    >
       {document.sections.map((section) => {
         const recorded = playable.has(section.id);
         return (

@@ -83,9 +83,24 @@ body::after {
 .read-along .playable .word:hover {
   background: rgb(244 237 226 / 0.06);
 }
-.read-along .word.is-current-word {
+/* Highlight styles, chosen on the homepage or in the player (data-highlight) */
+.read-along[data-highlight="glow"] .word.is-current-word {
   background: rgb(255 181 71 / 0.22);
   box-shadow: 0 0 0 0.12em rgb(255 181 71 / 0.22);
+}
+.read-along[data-highlight="underline"] .word {
+  text-decoration: underline 2px transparent;
+  text-underline-offset: 0.28em;
+  transition: background-color 160ms var(--ease-spring), text-decoration-color 160ms var(--ease-spring);
+}
+.read-along[data-highlight="underline"] .word.is-current-word {
+  text-decoration-color: var(--color-tungsten);
+}
+.read-along[data-highlight="ink"] .word {
+  transition: background-color 160ms var(--ease-spring), color 160ms var(--ease-spring);
+}
+.read-along[data-highlight="ink"] .word.is-current-word {
+  color: var(--color-tungsten);
 }
 
 /* The player's scrubber: tungsten progress on a hairline track */
@@ -123,6 +138,21 @@ body::after {
   border: 0;
   border-radius: 999px;
   background: var(--color-ink);
+}
+
+/* Confirmation dialog: the page behind dims and blurs, the card rises in */
+.confirm-dialog::backdrop {
+  background: rgb(11 9 8 / 0.7);
+  backdrop-filter: blur(6px);
+}
+.confirm-dialog[open] {
+  animation: dialog-in 320ms var(--ease-spring);
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

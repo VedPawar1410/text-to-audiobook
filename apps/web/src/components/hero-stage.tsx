@@ -2,7 +2,9 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
+import { type HighlightStyle, useHighlightStyle } from "@/lib/highlight-style";
 import { Bezel } from "./bezel";
+import { HighlightPicker } from "./highlight-picker";
 import { Orb } from "./orb";
 
 // An original line, performed word by word to preview the read-along reader.
@@ -14,10 +16,17 @@ const WORD_MS = 330;
 const SENTENCE_PAUSE_MS = 900;
 const LOOP_PAUSE_MS = 2200;
 
+function wordColor(style: HighlightStyle, i: number, index: number) {
+  if (style === "off") return "text-ink";
+  if (style === "ink" && i === index) return "text-tungsten";
+  return i <= index ? "text-ink" : "text-ink-faint";
+}
+
 // Orb + read-along demo share one clock, so the voice visibly "speaks" each word.
 export function HeroStage() {
   const reduce = useReducedMotion();
   const [index, setIndex] = useState(reduce ? 1 : 0);
+  const [style, setStyle] = useHighlightStyle();
 
   useEffect(() => {
     if (reduce) return;
@@ -38,29 +47,35 @@ export function HeroStage() {
       </div>
 
       <Bezel className="md:col-span-12">
-        <div className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:gap-10 md:p-10">
-          <span className="shrink-0 font-mono text-[11px] tracking-[0.2em] text-ink-muted uppercase">
+        <div className="flex flex-col gap-4 p-6 md:flex-row md:items-start md:gap-10 md:p-10">
+          <span className="shrink-0 font-mono text-[11px] tracking-[0.2em] text-ink-muted uppercase md:pt-3">
             Read-along preview
           </span>
-          <p className="font-read text-2xl leading-snug md:text-3xl">
-            {WORDS.map((word, i) => (
-              // `isolate` keeps the -z-10 glow behind this word, not behind the whole card
-              <span key={i} className="relative isolate inline-block px-[0.12em]">
-                {i === index && (
-                  <motion.span
-                    layoutId="spoken-word"
-                    className="absolute inset-0 -z-10 rounded-md bg-tungsten/20 ring-1 ring-tungsten/40"
-                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                  />
-                )}
-                <span
-                  className={`transition-colors duration-300 ${i <= index ? "text-ink" : "text-ink-faint"}`}
-                >
-                  {word}
+          <div className="flex flex-col gap-8">
+            <p className="font-read text-2xl leading-snug md:text-3xl">
+              {WORDS.map((word, i) => (
+                // `isolate` keeps the -z-10 marks behind this word, not behind the whole card
+                <span key={i} className="relative isolate inline-block px-[0.12em]">
+                  {i === index && style === "glow" && (
+                    <motion.span
+                      layoutId="spoken-word"
+                      className="absolute inset-0 -z-10 rounded-md bg-tungsten/20 ring-1 ring-tungsten/40"
+                      transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                    />
+                  )}
+                  {i === index && style === "underline" && (
+                    <motion.span
+                      layoutId="spoken-underline"
+                      className="absolute inset-x-[0.12em] bottom-[0.02em] -z-10 h-[2px] rounded-full bg-tungsten"
+                      transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                    />
+                  )}
+                  <span className={`transition-colors duration-300 ${wordColor(style, i, index)}`}>{word}</span>
                 </span>
-              </span>
-            ))}
-          </p>
+              ))}
+            </p>
+            <HighlightPicker name="hero-highlight" value={style} onChange={setStyle} showHint />
+          </div>
         </div>
       </Bezel>
     </>

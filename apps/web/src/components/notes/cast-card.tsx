@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { Bezel } from "@/components/bezel";
-import { LABEL, SELECT } from "@/components/ui";
+import { LABEL } from "@/components/ui";
 import { api, type DocumentDetail, type Persona, type Voice } from "@/lib/api";
 import { useVoicePreview, useVoices } from "@/lib/hooks";
+import { VoicePicker } from "./voice-picker";
 
-const SPEEDS = [0.8, 0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.15, 1.2];
+// A voice's natural range: beyond this Kokoro starts to sound rushed or drawn out
+const MIN_SPEED = 0.7;
+const MAX_SPEED = 1.3;
 const FALLBACK_SAMPLE = "Every story deserves a voice. This is how I'll sound.";
 
 /** The first substantial line this role speaks, so previews sound like the actual part. */
@@ -58,6 +61,8 @@ type CastCardProps = {
 function CastCard({ documentId, persona, voices, sample, preview, onChange }: CastCardProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [draftSpeed, setDraftSpeed] = useState<number | null>(null); // shown until the server has it
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const key = persona.cast_id;
   const isPlaying = preview.playing === key;
   const isLoading = preview.loading === key;
@@ -76,15 +81,26 @@ function CastCard({ documentId, persona, voices, sample, preview, onChange }: Ca
     }
   }
 
+  useEffect(() => () => clearTimeout(saveTimer.current), []);
+
+  // The slider saves once it settles (400 ms after the last move), not on every step.
+  // The draft stays on screen until then, so quick key presses build on each other.
+  function changeSpeed(next: number) {
+    setDraftSpeed(next);
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      if (next !== persona.speed) await update({ speed: next });
+      setDraftSpeed((current) => (current === next ? null : current));
+    }, 400);
+  }
+
   function togglePreview() {
     if (isPlaying) return preview.stop();
     preview.play(key, sample, persona.voice, persona.speed).catch(() => setError("Couldn't play this voice."));
   }
 
-  const groups = Object.entries(
-    Object.groupBy(voices, (v) => `${v.accent} · ${v.gender}`) as Record<string, Voice[]>,
-  );
-  const speeds = [...new Set([...SPEEDS, persona.speed])].sort((a, b) => a - b);
+  const speed = draftSpeed ?? persona.speed;
+  const progress = ((speed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED)) * 100;
 
   return (
     <Bezel className="h-full">
@@ -112,43 +128,44 @@ function CastCard({ documentId, persona, voices, sample, preview, onChange }: Ca
 
         <p className="font-read leading-relaxed text-ink-muted italic">&ldquo;{persona.description}&rdquo;</p>
 
-        <div className="mt-auto grid grid-cols-[1fr_6.5rem] gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className={LABEL}>Voice</span>
-            <select
+        <div className="mt-auto flex flex-col gap-5">
+          <div className="flex flex-col gap-1.5">
+            <span id={`voice-label-${key}`} className={LABEL}>
+              Voice
+            </span>
+            <VoicePicker
+              voices={voices}
               value={persona.voice}
+              labelledBy={`voice-label-${key}`}
               disabled={saving}
-              onChange={(e) => update({ voice: e.target.value })}
-              aria-describedby={error ? errorId : undefined}
-              className={SELECT}
-            >
-              {groups.length === 0 && <option value={persona.voice}>{persona.voice}</option>}
-              {groups.map(([group, members]) => (
-                <optgroup key={group} label={group}>
-                  {members.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className={LABEL}>Speed</span>
-            <select
-              value={persona.speed}
-              disabled={saving}
-              onChange={(e) => update({ speed: Number(e.target.value) })}
-              className={SELECT}
-            >
-              {speeds.map((s) => (
-                <option key={s} value={s}>
-                  {s.toFixed(2)}×
-                </option>
-              ))}
-            </select>
-          </label>
+              describedBy={error ? errorId : undefined}
+              onChange={(voice) => void update({ voice })}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between">
+              <label htmlFor={`speed-${key}`} className={LABEL}>
+                Speed
+              </label>
+              <span className="font-mono text-xs text-ink">{speed.toFixed(2)}×</span>
+            </div>
+            <input
+              id={`speed-${key}`}
+              type="range"
+              min={MIN_SPEED}
+              max={MAX_SPEED}
+              step={0.01}
+              value={speed}
+              aria-valuetext={`${speed.toFixed(2)} times`}
+              onChange={(e) => changeSpeed(Number(e.target.value))}
+              style={{ "--progress": `${progress}%` } as CSSProperties}
+              className="scrubber h-6 w-full"
+            />
+            <div aria-hidden className="flex justify-between font-mono text-[10px] tracking-[0.15em] text-ink-muted uppercase">
+              <span>Slower</span>
+              <span>Faster</span>
+            </div>
+          </div>
         </div>
         {error && (
           <p id={errorId} role="alert" className="text-sm text-danger">
