@@ -83,6 +83,20 @@ def test_a_failed_chunk_falls_back_to_defaults_for_its_lines_only():
     assert not any(p.labelled for p in performances[CHUNK_LINES:])
 
 
+def test_a_chunk_that_fails_once_is_retried_after_the_rest():
+    lines = [Line(i, "paragraph", f"Sentence {i}.") for i in range(CHUNK_LINES * 2 + 5)]
+    llm = FakeLLM(fail_once_chunks_starting_at={CHUNK_LINES})
+    progress = []
+
+    performances = direct_lines(llm, direction(cast=[]), lines, on_progress=lambda *p: progress.append(p))
+
+    assert all(p.labelled for p in performances)
+    assert len(llm.line_prompts) == 4  # three chunks, then the second one again
+    assert progress[0] == ("labelling", 0, 3)
+    assert sorted(p for p in progress if p[0] == "labelling")[-1] == ("labelling", 3, 3)
+    assert progress[-1] == ("retrying", 0, 1)
+
+
 def test_nothing_labelled_at_all_is_an_error():
     with pytest.raises(LLMError):
         direct_lines(FakeLLM(fail_chunks_starting_at={0}), direction(), SCRIPT)

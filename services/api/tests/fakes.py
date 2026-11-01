@@ -64,11 +64,20 @@ def label(index: int, **overrides) -> LineDirection:
 
 
 class FakeLLM:
-    def __init__(self, document=None, labeller=label, skip=(), fail_chunks_starting_at=(), fail_document=False):
+    def __init__(
+        self,
+        document=None,
+        labeller=label,
+        skip=(),
+        fail_chunks_starting_at=(),
+        fail_once_chunks_starting_at=(),
+        fail_document=False,
+    ):
         self.document = document or direction()
         self.labeller = labeller
         self.skip = set(skip)
         self.fail_chunks = set(fail_chunks_starting_at)
+        self.fail_once = set(fail_once_chunks_starting_at)  # busy the first time, fine on retry
         self.fail_document = fail_document
         self.prompts: list[str] = []
         self._lock = threading.Lock()  # chunks are labelled in parallel threads
@@ -85,6 +94,10 @@ class FakeLLM:
         indices = [int(i) for i in re.findall(r"^\[(\d+)\]", to_label, re.MULTILINE)]
         if indices and indices[0] in self.fail_chunks:
             raise LLMError("busy")
+        with self._lock:
+            if indices and indices[0] in self.fail_once:
+                self.fail_once.discard(indices[0])
+                raise LLMError("busy")
         return LineDirections(lines=[self.labeller(i) for i in indices if i not in self.skip])
 
     answer = "Kang has seen every possible ending, so he speaks as if this one is already decided."

@@ -48,7 +48,7 @@ export function DirectorsNotes({ params }: { params: Promise<{ id: string }> }) 
     <article className="flex flex-col gap-14">
       <Header document={document} onRenamed={(title) => setDocument((d) => d && { ...d, title })} />
 
-      {document.status === "directing" && <DirectingState sentences={document.stats.sentences} />}
+      {document.status === "directing" && <DirectingState progress={document.progress} sentences={document.stats.sentences} />}
 
       {(document.status === "parsed" || document.status === "failed") && (
         <StartDirecting document={document} onStarted={reload} />

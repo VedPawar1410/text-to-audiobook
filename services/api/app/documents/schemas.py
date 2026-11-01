@@ -86,9 +86,19 @@ class DocumentSummary(BaseModel):
     stats: dict
 
 
+class DirectingProgressOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    stage: str
+    done: int
+    total: int
+    started_at: float  # Unix time
+
+
 class DocumentDetail(DocumentSummary):
     subgenre: str | None
     summary: str | None
     narrator_style: str | None
     personas: list[PersonaOut]
     sections: list[SectionOut]
+    progress: DirectingProgressOut | None = None  # while the director works

@@ -117,3 +117,21 @@ def test_long_text_has_no_limit():
 
     assert doc.stats.characters > 100_000
     assert doc.stats.sentences == 400 * 5
+
+
+def test_a_long_text_without_headings_is_cut_into_parts_between_paragraphs():
+    paragraph = " ".join(["word"] * 99) + " end."  # 100 words
+    doc = parse_text("\n\n".join([paragraph] * 40))  # 4,000 words, no headings
+
+    assert [s.title for s in doc.sections] == ["Part 1", "Part 2", "Part 3"]
+    assert [sum(len(b.text.split()) for b in s.blocks) for s in doc.sections] == [1500, 1500, 1000]
+    assert doc.stats.words == 4000  # nothing lost or duplicated
+
+
+def test_a_short_tail_joins_the_part_before_and_short_chapters_stay_whole():
+    paragraph = " ".join(["word"] * 99) + " end."
+    tail = "\n\n".join([paragraph] * 34)  # 3,400 words: the last 400 would be a stub part
+
+    doc = parse_text("# The Book\n\n## Chapter One\n\n" + "\n\n".join([paragraph] * 20) + "\n\n## Chapter Two\n\n" + tail)
+
+    assert [s.title for s in doc.sections] == ["Chapter One", "Chapter Two · Part 1", "Chapter Two · Part 2"]

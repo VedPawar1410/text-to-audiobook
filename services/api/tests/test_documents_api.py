@@ -1,3 +1,4 @@
+import uuid
 from pathlib import Path
 
 import pytest
@@ -6,7 +7,8 @@ from fastapi.testclient import TestClient
 from app import llm as llm_module
 from app.db import SessionLocal
 from app.documents.routes import get_llm_factory
-from app.documents.service import init_db
+from app.documents import service
+from app.documents.service import DirectingProgress, init_db
 from app.main import app
 from app.models import Document
 from tests.fakes import FakeLLM, cast_member, direction, label
@@ -57,6 +59,30 @@ def test_directing_fills_genre_cast_and_performances(fake_llm):
     assert len({p["voice"] for p in body["personas"]}) == 5
     dialogue = [seg for s in body["sections"] for seg in s["segments"] if seg["block_kind"] == "dialogue"]
     assert all(seg["emotion"] == "ominous" and seg["intensity"] == 2 for seg in dialogue)
+
+
+def test_directing_reports_real_progress_and_clears_it_when_done(fake_llm):
+    document_id = save_fan_script()
+    seen = []
+
+    def labeller(index):
+        seen.append(service.directing_progress(uuid.UUID(document_id)))  # mid-run, from the LLM call
+        return label(index)
+
+    fake_llm.labeller = labeller
+    client.post(f"/documents/{document_id}/direct")
+
+    assert seen and (seen[0].stage, seen[0].done, seen[0].total) == ("labelling", 0, 1)
+    assert client.get(f"/documents/{document_id}").json()["progress"] is None  # finished
+
+
+def test_the_document_carries_progress_while_directing(monkeypatch):
+    document_id = save_fan_script()
+    monkeypatch.setitem(service._progress, uuid.UUID(document_id), DirectingProgress("labelling", 3, 8, started_at=1000.0))
+
+    body = client.get(f"/documents/{document_id}").json()
+
+    assert body["progress"] == {"stage": "labelling", "done": 3, "total": 8, "started_at": 1000.0}
 
 
 def test_directing_again_replaces_the_cast(fake_llm):
