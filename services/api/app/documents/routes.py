@@ -24,7 +24,7 @@ from app.documents.schemas import (
     SegmentUpdate,
 )
 from app.documents.service import create_document, directing_progress, run_direction
-from app.llm import LLM, LLMError, make_llm
+from app.llm import LLM, LLMError, make_fallback_llm, make_llm
 from app.models import Document, Segment
 from app.render.service import active_job, document_dir
 from app.structure.models import ParsedDocument
@@ -36,6 +36,11 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 def get_llm_factory() -> Callable[[str | None], LLM]:
     """Overridden in tests with a fake LLM."""
     return make_llm
+
+
+def get_fallback_llm() -> LLM | None:
+    """Groq when GROQ_API_KEY is set, else None. Overridden in tests."""
+    return make_fallback_llm()
 
 
 def _get(db: Session, document_id: uuid.UUID) -> Document:
@@ -132,6 +137,7 @@ def direct(
     background: BackgroundTasks,
     db: Session = Depends(get_db),
     llm_factory: Callable[[str | None], LLM] = Depends(get_llm_factory),
+    fallback: LLM | None = Depends(get_fallback_llm),
     x_llm_key: str | None = Header(default=None),  # bring-your-own-key, overrides the server's
 ):
     document = _get(db, document_id)
@@ -147,5 +153,5 @@ def direct(
     document.status = "directing"
     document.error = None
     db.commit()
-    background.add_task(run_direction, document.id, llm)
+    background.add_task(run_direction, document.id, llm, fallback)
     return document

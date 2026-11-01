@@ -7,6 +7,7 @@ from sqlalchemy import text, update
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import Base, SessionLocal, engine
 from app.director.casting import auto_cast
 from app.director.director import NARRATOR, Line, direct_document, direct_lines
@@ -94,7 +95,7 @@ def _lines(document: Document) -> list[Line]:
     ]
 
 
-def _direct(db: Session, document: Document, llm: LLM) -> None:
+def _direct(db: Session, document: Document, llm: LLM, fallback: LLM | None) -> None:
     lines = _lines(document)
     _progress[document.id] = DirectingProgress("reading")
     direction = direct_document(
@@ -107,7 +108,9 @@ def _direct(db: Session, document: Document, llm: LLM) -> None:
     def report(stage: str, done: int, total: int) -> None:
         _progress[document.id] = replace(_progress[document.id], stage=stage, done=done, total=total)
 
-    performances = {p.index: p for p in direct_lines(llm, direction, lines, on_progress=report)}
+    labeller, backup = (fallback, llm) if settings.label_provider == "groq" and fallback else (llm, fallback)
+    performed = direct_lines(labeller, direction, lines, on_progress=report, fallback=backup)
+    performances = {p.index: p for p in performed}
 
     if not document.author and direction.author and direction.author.strip():
         document.author = direction.author.strip()  # never overrides metadata or the reader's own edit
@@ -138,7 +141,7 @@ def _direct(db: Session, document: Document, llm: LLM) -> None:
     )
 
 
-def run_direction(document_id: uuid.UUID, llm: LLM) -> None:
+def run_direction(document_id: uuid.UUID, llm: LLM, fallback: LLM | None = None) -> None:
     """Background task: direct a document. Never leaves it stuck in "directing"."""
     try:
         with SessionLocal() as db:
@@ -146,7 +149,7 @@ def run_direction(document_id: uuid.UUID, llm: LLM) -> None:
             if document is None:
                 return
             try:
-                _direct(db, document, llm)
+                _direct(db, document, llm, fallback)
                 document.status = "directed"
             except Exception as error:
                 log.exception("Directing %s failed", document_id)

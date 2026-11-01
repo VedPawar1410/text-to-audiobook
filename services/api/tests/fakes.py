@@ -5,7 +5,7 @@ import threading
 
 import numpy as np
 
-from app.director.schema import CastMember, DocumentDirection, LineDirection, LineDirections
+from app.director.schema import CastMember, DocumentDirection, LineDirection
 from app.llm import LLMError
 from app.tts.base import RenderResult, Voice, WordTiming
 
@@ -63,6 +63,12 @@ def label(index: int, **overrides) -> LineDirection:
     return LineDirection(**values)
 
 
+def row(d: LineDirection) -> str:
+    """A label as the model writes it: one row, `index|speaker|emotion|...|stressed words`."""
+    fields = [d.index, d.speaker, d.emotion, d.intensity, d.pace, d.pause_before_ms, d.pause_after_ms]
+    return "|".join(str(f) for f in fields) + "|" + ",".join(d.emphasis)
+
+
 class FakeLLM:
     def __init__(
         self,
@@ -72,6 +78,7 @@ class FakeLLM:
         fail_chunks_starting_at=(),
         fail_once_chunks_starting_at=(),
         fail_document=False,
+        batch_lines=150,
     ):
         self.document = document or direction()
         self.labeller = labeller
@@ -79,17 +86,24 @@ class FakeLLM:
         self.fail_chunks = set(fail_chunks_starting_at)
         self.fail_once = set(fail_once_chunks_starting_at)  # busy the first time, fine on retry
         self.fail_document = fail_document
+        self.batch_lines = batch_lines  # lines per labelling request, like a real provider
+        self.parallel = 3
         self.prompts: list[str] = []
         self._lock = threading.Lock()  # chunks are labelled in parallel threads
 
-    def generate_json(self, *, system, prompt, schema):
+    def generate_json(self, *, system, prompt, schema, light=False):
         with self._lock:
             self.prompts.append(prompt)
         if schema is DocumentDirection:
             if self.fail_document:
                 raise LLMError("The AI service is unavailable right now.")
             return self.document.model_copy(deep=True)
+        raise AssertionError(f"No JSON answer faked for {schema.__name__}")
 
+    def generate_text(self, *, system, prompt, light=False):
+        """Line labelling: rows for every [index] in the prompt's lines to label."""
+        with self._lock:
+            self.prompts.append(prompt)
         to_label = prompt.split("Label every one of these lines")[1]
         indices = [int(i) for i in re.findall(r"^\[(\d+)\]", to_label, re.MULTILINE)]
         if indices and indices[0] in self.fail_chunks:
@@ -98,7 +112,7 @@ class FakeLLM:
             if indices and indices[0] in self.fail_once:
                 self.fail_once.discard(indices[0])
                 raise LLMError("busy")
-        return LineDirections(lines=[self.labeller(i) for i in indices if i not in self.skip])
+        return "\n".join(row(self.labeller(i)) for i in indices if i not in self.skip)
 
     answer = "Kang has seen every possible ending, so he speaks as if this one is already decided."
 
