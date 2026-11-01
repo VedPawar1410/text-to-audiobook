@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import llm as llm_module
+from app.ask import prompts
 from app.documents.routes import get_llm_factory
 from app.main import app
 from tests.fakes import FakeLLM, cast_member, direction
@@ -54,11 +55,39 @@ def test_the_prompt_grounds_the_question_in_the_reading(fake):
 
     prompt = llm.prompts[-1]
     assert "A conqueror waits at the end of time." in prompt  # the director's summary
-    assert "Kang: You came." in prompt  # nearby dialogue, labelled by character
-    assert "Thor: Where are the others?" in prompt
+    assert ">>> Kang: You came. <<< (the reader is here)" in prompt  # dialogue, labelled by character
+    assert "Kang: They always come." in prompt  # the lines just after finish the thought
     assert 'selected this passage: "They always come."' in prompt
     assert "Reader: Who is Kang?" in prompt and "You: A conqueror." in prompt
     assert prompt.rstrip().endswith("The reader asks: What does he mean?")
+
+
+def test_the_model_reads_from_the_start_but_never_past_the_reader(fake):
+    llm, document_id = fake
+
+    client.post(
+        f"/documents/{document_id}/ask",
+        json={"question": "Who is here?", "segment_id": segment_id(document_id, "You came.")},
+    )
+
+    prompt = llm.prompts[-1]
+    assert "A vast hall of green and gold." in prompt  # the opening, long before the position
+    assert "Every timeline ends" not in prompt  # later lines would be spoilers
+
+
+def test_a_very_long_book_keeps_the_most_recent_text(fake, monkeypatch):
+    llm, document_id = fake
+    monkeypatch.setattr(prompts, "MAX_CONTEXT_CHARS", 120)
+
+    client.post(
+        f"/documents/{document_id}/ask",
+        json={"question": "What now?", "segment_id": segment_id(document_id, "Answer me!")},
+    )
+
+    prompt = llm.prompts[-1]
+    assert "(Earlier text omitted.)" in prompt
+    assert "A vast hall of green and gold." not in prompt
+    assert ">>> Thor: Answer me! <<< (the reader is here)" in prompt  # never trimmed away
 
 
 def test_without_a_position_the_prompt_says_so(fake):
