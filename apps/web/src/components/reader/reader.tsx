@@ -6,6 +6,7 @@ import { Bezel } from "@/components/bezel";
 import { PillLink, SECONDARY } from "@/components/pill-link";
 import { ErrorNote, Eyebrow, Skeleton } from "@/components/ui";
 import type { Chapter, DocumentDetail } from "@/lib/api";
+import { HIGHLIGHT_STYLES, useHighlightStyle } from "@/lib/highlight-style";
 import { useDocument, useRender } from "@/lib/hooks";
 import { useReadAlong } from "@/lib/use-read-along";
 import { AskPanel, type AskContext } from "./ask-panel";
@@ -39,7 +40,8 @@ export function Reader({ params }: { params: Promise<{ id: string }> }) {
 
 function ReadAlongView({ document, chapters }: { document: DocumentDetail; chapters: Chapter[] }) {
   const player = useReadAlong(document, chapters);
-  const { toggle, step, setHighlight, highlight, seekTo, pause, currentSegment } = player;
+  const { toggle, step, setHighlight, seekTo, pause, currentSegment } = player;
+  const [style, setStyle] = useHighlightStyle();
   const [ask, setAsk] = useState<AskContext | null>(null);
   const [pill, setPill] = useState<{ x: number; y: number; text: string; segmentId: number } | null>(null);
 
@@ -92,7 +94,12 @@ function ReadAlongView({ document, chapters }: { document: DocumentDetail; chapt
     window.document.title = `${document.title ?? "Untitled"} · Read along`;
   }, [document.title]);
 
-  // Space plays and pauses, arrows move by sentence, H toggles the highlight
+  // The player only needs on/off; how the word looks is CSS keyed on data-highlight
+  useEffect(() => {
+    setHighlight(style !== "off");
+  }, [style, setHighlight]);
+
+  // Space plays and pauses, arrows move by sentence, H cycles the highlight style
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       // Leave keys alone in form controls and buttons (Space on a focused button presses it)
@@ -105,12 +112,13 @@ function ReadAlongView({ document, chapters }: { document: DocumentDetail; chapt
         event.preventDefault();
         void step(event.key === "ArrowRight" ? 1 : -1);
       } else if (event.key.toLowerCase() === "h") {
-        setHighlight(!highlight);
+        const next = (HIGHLIGHT_STYLES.findIndex((s) => s.id === style) + 1) % HIGHLIGHT_STYLES.length;
+        setStyle(HIGHLIGHT_STYLES[next].id);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [toggle, step, setHighlight, highlight]);
+  }, [toggle, step, style, setStyle]);
 
   return (
     <>
@@ -128,7 +136,7 @@ function ReadAlongView({ document, chapters }: { document: DocumentDetail; chapt
         </Link>
       </header>
 
-      <ReaderText document={document} playable={playable} names={names} highlight={highlight} onSeek={onSeek} />
+      <ReaderText document={document} playable={playable} names={names} highlightStyle={style} onSeek={onSeek} />
 
       {!player.following && player.playing && (
         <button

@@ -1,7 +1,9 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
+import { HighlightPicker } from "@/components/highlight-picker";
 import { Orb } from "@/components/orb";
+import { useHighlightStyle } from "@/lib/highlight-style";
 import { formatClock } from "@/lib/timing";
 import { SPEEDS, type ReadAlong } from "@/lib/use-read-along";
 
@@ -25,6 +27,53 @@ const ASK = "M2.5 4.5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v4.5a2 2 0 0 1-2 2H7l-3 2.5v-
 
 function Chip({ children }: { children: ReactNode }) {
   return <span className="shrink-0 font-mono text-[11px] text-ink-muted">{children}</span>;
+}
+
+/** The highlight style, in a small panel above its button. Stays open so styles can be compared live. */
+function HighlightMenu() {
+  const [style, setStyle] = useHighlightStyle();
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("pointerdown", onPointer);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerdown", onPointer);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={root} className="relative">
+      <button
+        type="button"
+        aria-label="Highlight style"
+        aria-expanded={open}
+        aria-controls="highlight-menu"
+        onClick={() => setOpen(!open)}
+        className={`${ICON_BUTTON} ${style === "off" ? "" : "text-tungsten"}`}
+      >
+        <Icon d={HIGHLIGHT} />
+      </button>
+      {open && (
+        <div
+          id="highlight-menu"
+          className="absolute right-0 bottom-full mb-3 w-max max-w-[calc(100vw-1.5rem)] rounded-3xl border border-hairline bg-stage/95 p-3 backdrop-blur-xl"
+        >
+          <p className="mb-2 pl-1 font-mono text-[11px] tracking-[0.2em] text-ink-muted uppercase">Highlight</p>
+          <HighlightPicker name="player-highlight" value={style} onChange={setStyle} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** Fixed glass bar: scrubber, chapter, transport, speed and highlight. */
@@ -110,15 +159,7 @@ export function PlayerBar({ player, onAsk }: { player: ReadAlong; onAsk: () => v
                 </option>
               ))}
             </select>
-            <button
-              type="button"
-              aria-label="Highlight words as they're spoken"
-              aria-pressed={player.highlight}
-              onClick={() => player.setHighlight(!player.highlight)}
-              className={`${ICON_BUTTON} ${player.highlight ? "text-tungsten" : ""}`}
-            >
-              <Icon d={HIGHLIGHT} />
-            </button>
+            <HighlightMenu />
           </div>
         </div>
       </div>
