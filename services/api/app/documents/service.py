@@ -1,6 +1,7 @@
 import logging
+import time
 import uuid
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field, replace
 
 from sqlalchemy import update
 from sqlalchemy.exc import OperationalError
@@ -14,6 +15,23 @@ from app.models import ChapterAudio, Document, Persona, RenderJob, Section, Segm
 from app.structure.models import ParsedDocument
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class DirectingProgress:
+    stage: str  # "reading" (the whole-text pass), "labelling" or "retrying" (chunks of lines)
+    done: int = 0
+    total: int = 0
+    started_at: float = field(default_factory=time.time)  # so "so far" survives a page reload
+
+
+# Directing runs as a background task in this process, so its progress lives here too:
+# it lasts exactly as long as the work and needs no table (a restart ends both).
+_progress: dict[uuid.UUID, DirectingProgress] = {}
+
+
+def directing_progress(document_id: uuid.UUID) -> DirectingProgress | None:
+    return _progress.get(document_id)
 
 
 def init_db() -> None:
@@ -75,6 +93,7 @@ def _lines(document: Document) -> list[Line]:
 
 def _direct(db: Session, document: Document, llm: LLM) -> None:
     lines = _lines(document)
+    _progress[document.id] = DirectingProgress("reading")
     direction = direct_document(
         llm,
         title=document.title,
@@ -82,7 +101,10 @@ def _direct(db: Session, document: Document, llm: LLM) -> None:
         speakers=document.stats.get("speakers", []),
         lines=lines,
     )
-    performances = {p.index: p for p in direct_lines(llm, direction, lines)}
+    def report(stage: str, done: int, total: int) -> None:
+        _progress[document.id] = replace(_progress[document.id], stage=stage, done=done, total=total)
+
+    performances = {p.index: p for p in direct_lines(llm, direction, lines, on_progress=report)}
 
     document.genre = direction.genre
     document.subgenre = direction.subgenre
@@ -113,19 +135,24 @@ def _direct(db: Session, document: Document, llm: LLM) -> None:
 
 def run_direction(document_id: uuid.UUID, llm: LLM) -> None:
     """Background task: direct a document. Never leaves it stuck in "directing"."""
-    with SessionLocal() as db:
-        document = db.get(Document, document_id)
-        if document is None:
-            return
-        try:
-            _direct(db, document, llm)
-            document.status = "directed"
-        except Exception as error:
-            log.exception("Directing %s failed", document_id)
-            db.rollback()
+    try:
+        with SessionLocal() as db:
             document = db.get(Document, document_id)
-            document.status = "failed"
-            document.error = (
-                str(error) if isinstance(error, LLMError) else "Something went wrong while directing. Please try again."
-            )
-        db.commit()
+            if document is None:
+                return
+            try:
+                _direct(db, document, llm)
+                document.status = "directed"
+            except Exception as error:
+                log.exception("Directing %s failed", document_id)
+                db.rollback()
+                document = db.get(Document, document_id)
+                document.status = "failed"
+                document.error = (
+                    str(error)
+                    if isinstance(error, LLMError)
+                    else "Something went wrong while directing. Please try again."
+                )
+            db.commit()
+    finally:
+        _progress.pop(document_id, None)  # after the commit, so a poll never sees "directing" without it

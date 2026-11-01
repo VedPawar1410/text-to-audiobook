@@ -63,12 +63,21 @@ export type Segment = {
 
 export type Section = { id: number; position: number; title: string | null; segments: Segment[] };
 
+/** What the director is doing right now (only while status is "directing"). */
+export type DirectingProgress = {
+  stage: "reading" | "labelling" | "retrying";
+  done: number;
+  total: number;
+  started_at: number; // Unix seconds
+};
+
 export type DocumentDetail = DocumentSummary & {
   subgenre: string | null;
   summary: string | null;
   narrator_style: string | null;
   personas: Persona[];
   sections: Section[];
+  progress: DirectingProgress | null;
 };
 
 export type Voice = { id: string; name: string; gender: "female" | "male"; accent: "American" | "British" };

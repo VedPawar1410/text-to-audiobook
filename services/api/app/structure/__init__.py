@@ -12,6 +12,10 @@ from app.structure.screenplay import SLUGLINE, TRANSITION, looks_like_screenplay
 from app.structure.sentences import split_sentences
 
 WORDS_PER_MINUTE = 150  # typical audiobook narration pace
+# A chapter is also the unit that records, plays and gets a marker in the export. A long
+# text with no headings would be one huge chapter, playable only once all of it is
+# recorded, so it's cut into parts of about 10 minutes (Kokoro reads ~130 wpm).
+PART_WORDS = 1500
 
 
 def normalize(text: str) -> str:
@@ -37,6 +41,30 @@ def _leading_title(text: str) -> tuple[str | None, str]:
     return line, rest
 
 
+def _words(blocks) -> int:
+    return sum(len(b.text.split()) for b in blocks)
+
+
+def split_long_sections(sections: list[Section], part_words: int = PART_WORDS) -> list[Section]:
+    """Cut sections longer than part_words into parts, only between blocks (never mid-paragraph)."""
+    result: list[Section] = []
+    for section in sections:
+        if _words(section.blocks) <= part_words * 1.5:  # a little over is fine: no 2-minute stub parts
+            result.append(section)
+            continue
+        parts: list[list] = [[]]
+        for block in section.blocks:
+            if _words(parts[-1]) >= part_words:
+                parts.append([])
+            parts[-1].append(block)
+        if len(parts) > 1 and _words(parts[-1]) < part_words / 3:  # a short tail joins the part before
+            parts[-2].extend(parts.pop())
+        for number, blocks in enumerate(parts, start=1):
+            title = f"{section.title} · Part {number}" if section.title else f"Part {number}"
+            result.append(Section(title=title, blocks=blocks))
+    return result
+
+
 def _finalize(sections: list[Section]) -> None:
     for section in sections:
         for block in section.blocks:
@@ -50,7 +78,7 @@ def _finalize(sections: list[Section]) -> None:
 
 def _stats(text: str, sections: list[Section]) -> Stats:
     blocks = [b for s in sections for b in s.blocks]
-    words = sum(len(b.text.split()) for b in blocks)
+    words = _words(blocks)
     speakers = list(dict.fromkeys(b.speaker for b in blocks if b.speaker))
     return Stats(
         characters=len(text),
@@ -72,6 +100,7 @@ def parse_text(text: str, title: str | None = None) -> ParsedDocument:
         detected_title = detected_title or markdown_title
         doc_format = "prose"
 
+    sections = split_long_sections(sections)
     _finalize(sections)
     return ParsedDocument(
         title=detected_title or title,

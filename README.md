@@ -6,10 +6,11 @@ Turn any long text (scripts, articles, books, PDFs) into an expressive, multi-vo
 
 ## What it does (v1 goals)
 
-- **AI director.** Reads your text and works out its structure (chapters, scenes, dialogue), genre and tone, who is speaking, and how each line should be performed.
+- **AI director.** Reads your text and works out its structure (chapters, scenes, dialogue), genre and tone, who is speaking, and how each line should be performed. You see its real progress as it works, batch by batch.
 - **A cast of voices.** Each character gets its own voice. You can design voice *personas* by describing them ("gravelly, menacing, slow and theatrical"). Real people's voices are never cloned.
 - **Read-along.** Live word highlighting synced to the audio. Click any word to jump there. Pick how the spoken word is marked (glow, underline, ink, or off); the homepage previews each one.
 - **Ask the AI.** Pause, select a passage and ask what it means, without leaving the page.
+- **Listen early.** Chapters become playable as soon as they're recorded. A long text with no chapter headings is cut into parts of about 10 minutes, so you can start listening in a few minutes instead of waiting for the whole book.
 - **Export.** Download the whole book as an M4B audiobook or a single MP3, both with chapter markers.
 - **No length limit.** Paste text, upload `.txt`/`.md`/PDF, or point it at a web article.
 

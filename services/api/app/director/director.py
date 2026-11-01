@@ -3,7 +3,8 @@
 A. direct_document: one call reads the whole text (Gemini Flash takes 1M tokens)
    and decides the genre, a summary, the narrator's style and the cast.
 B. direct_lines: every sentence gets a performance (speaker, emotion, pace, pauses,
-   emphasis). Chunks run in parallel; each also sees the few lines before it.
+   emphasis). Chunks run in parallel; each also sees the few lines before it. Chunks
+   that fail get one more try at the end, one at a time, when the service is quieter.
 
 The LLM proposes and our code decides: speakers the parser already knows always
 win, values are clamped to safe ranges, and lines the LLM skipped get defaults.
@@ -11,6 +12,8 @@ win, values are clamped to safe ranges, and lines the LLM skipped get defaults.
 
 import logging
 import string
+import threading
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
@@ -109,9 +112,18 @@ def _resolve(line: Line, label: LineDirection | None, cast_ids: set[str]) -> Per
     )
 
 
-def direct_lines(llm: LLM, direction: DocumentDirection, lines: list[Line]) -> list[Performance]:
+# (stage, done, total): "labelling" chunk by chunk, then "retrying" any that failed
+Progress = Callable[[str, int, int], None]
+
+
+def direct_lines(
+    llm: LLM, direction: DocumentDirection, lines: list[Line], on_progress: Progress | None = None
+) -> list[Performance]:
     spoken = [line for line in lines if line.text]
     chunks = [spoken[i : i + CHUNK_LINES] for i in range(0, len(spoken), CHUNK_LINES)]
+    report = on_progress or (lambda stage, done, total: None)
+    finished = 0
+    counter = threading.Lock()
 
     def label_chunk(number: int) -> list[LineDirection]:
         start = number * CHUNK_LINES
@@ -124,8 +136,23 @@ def direct_lines(llm: LLM, direction: DocumentDirection, lines: list[Line]) -> l
             log.warning("Chunk %d of %d failed: %s", number + 1, len(chunks), error)
             return []
 
+    def label_and_count(number: int) -> list[LineDirection]:
+        nonlocal finished
+        result = label_chunk(number)
+        with counter:  # chunks finish in any order, on pool threads
+            finished += 1
+            report("labelling", finished, len(chunks))
+        return result
+
+    report("labelling", 0, len(chunks))
     with ThreadPoolExecutor(PARALLEL_CALLS) as pool:
-        results = list(pool.map(label_chunk, range(len(chunks))))
+        results = list(pool.map(label_and_count, range(len(chunks))))
+
+    # Failures are usually a busy service (503/429) after its own retries: one more try each
+    failed = [number for number, result in enumerate(results) if not result]
+    for attempt, number in enumerate(failed):
+        report("retrying", attempt, len(failed))
+        results[number] = label_chunk(number)
 
     if spoken and not any(results):
         raise LLMError("The AI director couldn't label any lines. Please try again.")

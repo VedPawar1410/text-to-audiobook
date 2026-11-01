@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.documents.schemas import (
+    DirectingProgressOut,
     DocumentDetail,
     DocumentSummary,
     DocumentUpdate,
@@ -22,7 +23,7 @@ from app.documents.schemas import (
     SegmentOut,
     SegmentUpdate,
 )
-from app.documents.service import create_document, run_direction
+from app.documents.service import create_document, directing_progress, run_direction
 from app.llm import LLM, LLMError, make_llm
 from app.models import Document, Segment
 from app.render.service import active_job, document_dir
@@ -66,7 +67,10 @@ def list_documents(db: Session = Depends(get_db)):
 
 @router.get("/{document_id}", response_model=DocumentDetail)
 def get_document(document_id: uuid.UUID, db: Session = Depends(get_db)):
-    return _get(db, document_id)
+    detail = DocumentDetail.model_validate(_get(db, document_id))
+    progress = directing_progress(document_id)
+    detail.progress = DirectingProgressOut.model_validate(progress) if progress else None
+    return detail
 
 
 @router.patch("/{document_id}", response_model=DocumentSummary)

@@ -26,11 +26,6 @@ export function formatDuration(minutes: number): string {
   return rest ? `${hours} h ${rest} min` : `${hours} h`;
 }
 
-/** Rough directing time: one whole-document call, then chunks of 150 lines, 3 at a time. */
-export function estimateDirectingSeconds(sentences: number): number {
-  return 25 + Math.ceil(sentences / 450) * 25;
-}
-
 export function titleCase(id: string): string {
   return id.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
