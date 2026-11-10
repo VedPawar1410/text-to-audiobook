@@ -2,6 +2,7 @@ import { Bezel } from "@/components/bezel";
 import { HeroStage } from "@/components/hero-stage";
 import { PillLink, SECONDARY } from "@/components/pill-link";
 import { Reveal } from "@/components/reveal";
+import { DEMO, SHOWCASE_BOOK } from "@/lib/demo";
 
 const STEPS = [
   {
@@ -45,8 +46,9 @@ export default function Home() {
             </p>
           </Reveal>
           <Reveal delay={0.3} className="mt-10 flex flex-wrap items-center gap-2">
-            <PillLink href="/new" icon="right">
-              Start a new book
+            {/* The showcase has one recorded book and no studio: send visitors straight to it */}
+            <PillLink href={DEMO ? `/documents/${SHOWCASE_BOOK}/listen` : "/new"} icon="right">
+              {DEMO ? "Listen to the showcase" : "Start a new book"}
             </PillLink>
             <a href="#how" className={SECONDARY}>
               See how it works

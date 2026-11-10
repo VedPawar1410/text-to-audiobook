@@ -66,6 +66,7 @@ def main() -> None:
         write(f"documents/{book}/chapters/{chapter['section_id']}/manifest.json", get(f"{base}/manifest"))
         write(f"documents/{book}/chapters/{chapter['section_id']}/audio.mp3", get(f"{base}/audio"))
     print("Done. Build with NEXT_PUBLIC_DEMO=1 to serve it.")
+    print(f"If this is a different book, set SHOWCASE_BOOK = \"{book}\" in apps/web/src/lib/demo.ts.")
 
 
 if __name__ == "__main__":
