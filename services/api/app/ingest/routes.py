@@ -16,6 +16,7 @@ from app.ingest.pdf import text_from_pdf
 from app.ingest.url import text_from_url
 from app.structure import parse_text
 from app.structure.models import ParsedDocument
+from app.structure.second_opinion import second_opinion
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 
@@ -33,7 +34,7 @@ class UrlIn(BaseModel):
 
 
 def _parse(text: str, title: str | None, author: str | None = None) -> ParsedDocument:
-    document = parse_text(text, title=title, author=author)
+    document = second_opinion(parse_text(text, title=title, author=author))  # a no-op unless STRUCTURE_AI is set
     if document.stats.words == 0:
         raise HTTPException(status_code=422, detail="No readable text found.")
     return document

@@ -61,9 +61,11 @@ def history_table(history: list[dict]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--label", help="record this run's totals in the history under this name")
+    parser.add_argument("--ai", choices=["off", "claude", "gemini"], default="off",
+                        help="add the AI second opinion (calls the provider; needs its API key in .env)")
     args = parser.parse_args()
 
-    scores = [score_case(case) for case in all_cases()]
+    scores = [score_case(case, args.ai) for case in all_cases()]
     current = table(scores)
     print(current)
 
@@ -73,6 +75,8 @@ def main() -> None:
         history = [h for h in history if h["label"] != args.label]  # re-running a label replaces it
         history.append({"label": args.label, "date": date.today().isoformat(), **totals(scores)})
         HISTORY.write_text(json.dumps(history, indent=2) + "\n")
+    if args.ai != "off":
+        return  # the report's "current scores" always show what import does by default (no AI)
 
     (REPORTS / "structure-eval.md").write_text(
         "# Structure evaluation\n\n"

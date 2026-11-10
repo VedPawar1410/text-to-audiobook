@@ -53,5 +53,38 @@
     "words_lost": 0,
     "titles_ok": "8/8",
     "authors_ok": "8/8"
+  },
+  {
+    "label": "Step 6: rules only (9 cases incl. hard)",
+    "date": "2026-11-10",
+    "paragraphs_pct": 100.0,
+    "headings": "49/54",
+    "headings_extra": 0,
+    "junk_spoken": 5,
+    "words_lost": 0,
+    "titles_ok": "9/9",
+    "authors_ok": "9/9"
+  },
+  {
+    "label": "Step 6: rules + Claude Haiku 5.5",
+    "date": "2026-11-10",
+    "paragraphs_pct": 100.0,
+    "headings": "53/54",
+    "headings_extra": 0,
+    "junk_spoken": 0,
+    "words_lost": 0,
+    "titles_ok": "9/9",
+    "authors_ok": "9/9"
+  },
+  {
+    "label": "Step 6: rules + Gemini 3.5 Flash-Lite",
+    "date": "2026-11-10",
+    "paragraphs_pct": 100.0,
+    "headings": "54/54",
+    "headings_extra": 0,
+    "junk_spoken": 0,
+    "words_lost": 0,
+    "titles_ok": "9/9",
+    "authors_ok": "9/9"
   }
 ]

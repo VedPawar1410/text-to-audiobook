@@ -43,3 +43,4 @@ class ParsedDocument(BaseModel):
     format: Literal["prose", "screenplay"]
     sections: list[Section]
     stats: Stats
+    notes: list[str] = Field(default_factory=list)  # e.g. what the optional AI second opinion changed

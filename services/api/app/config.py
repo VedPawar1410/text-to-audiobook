@@ -31,5 +31,14 @@ class Settings(BaseSettings):
     # Gemini is more expressive; Groq is much faster (PR 16 comparison)
     label_provider: Literal["gemini", "groq"] = "gemini"
 
+    # Optional AI second opinion on doubtful lines after import (structure/second_opinion.py).
+    # Off by default, so import stays free, instant and private (no text leaves the computer).
+    # The rules decide nearly everything; the AI only helps on hard pastes such as X threads
+    # with sentence-case titles and "Show more" junk (reports/structure-eval.md, step 6).
+    structure_ai: Literal["off", "claude", "gemini"] = "off"
+    anthropic_api_key: str | None = None  # console.anthropic.com
+    structure_ai_claude_model: str = "claude-haiku-5-5"
+    structure_ai_gemini_model: str = "gemini-3.5-flash-lite"
+
 
 settings = Settings()

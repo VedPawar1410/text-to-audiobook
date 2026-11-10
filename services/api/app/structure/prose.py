@@ -54,7 +54,9 @@ def heading_strength(line: str, alone: bool) -> int | None:
         return None
     if line.endswith(":"):  # "Act One:", "The First Night:" (but not "What he remembered:")
         return WEAK if len(words) <= 6 and (_title_case(line[:-1]) or _caps(line)) else None
-    if alone and len(words) <= 8 and (_caps(line) or _title_case(line)):
+    # A guessed heading with digits ("48.2K Views", "11:42 PM") is almost never a chapter title;
+    # numbered ones ("Chapter 3") are STRONG above. Leave it as text (a doubtful line).
+    if alone and len(words) <= 8 and not re.search(r"\d", line) and (_caps(line) or _title_case(line)):
         return WEAK
     return None
 

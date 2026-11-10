@@ -296,8 +296,33 @@ def calibre_epub(chapters: list[Chapter]) -> Case:
     return Case("calibre_epub", "Converter-made EPUB from a text file: no headings, author 'Unknown'", "epub", data, truth)
 
 
+SOCIAL_JUNK = ["Show more", "Translate post", "Replying to @harbourfan", "11:42 PM · Nov 3, 2026", "48.2K Views"]
+
+
+def hard_social_paste(chapters: list[Chapter]) -> Case:
+    """Deliberately hard for rules (added in step 6 to test the AI second opinion): a thread
+    copied from X with chapter titles in sentence case ("A letter from the hill", which the
+    Title Case rule can't see) and the site's interface text mixed in."""
+    out, headings = [f"{TITLE}, a thread", ""], []
+    for number, chapter in enumerate(chapters):
+        name = chapter.name[0] + chapter.name[1:].lower()  # "A letter from the hill"
+        headings.append(name)
+        out.append(name)
+        for kind, text in chapter.items:
+            if kind == "sub":
+                headings.append(text[0] + text[1:].lower())
+                out.append(headings[-1])
+            else:
+                out.append(text)
+        out.append(SOCIAL_JUNK[number])
+    out.append(SOCIAL_JUNK[-1])
+    truth = Truth(f"{TITLE}, a thread", None, headings, _paragraphs(chapters), SOCIAL_JUNK)
+    return Case("hard_social_paste", "Hard: X thread, sentence-case titles, 'Show more' and view counts mixed in",
+                "text", "\n".join(out), truth)
+
+
 def all_cases() -> list[Case]:
     chapters = build_book()
     renderers = (paste_blank_lines, paste_single_newlines, gutenberg_style, book_pdf, web_markdown,
-                 unusual_headings, publisher_epub, calibre_epub)  # fmt: skip
+                 unusual_headings, publisher_epub, calibre_epub, hard_social_paste)  # fmt: skip
     return [render(chapters) for render in renderers]

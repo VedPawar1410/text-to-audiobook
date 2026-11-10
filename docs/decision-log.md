@@ -127,7 +127,7 @@ prepares each step, verifies it, hands over the commands and waits.
 | 3 | Web cleanup: reference sections, junk author metadata | Done 2026-11-10 |
 | 4 | PDF rules: indented paragraphs, running headers on ≥3 pages, contents pages with page numbers | Done 2026-11-10 |
 | 5 | EPUB import (no new dependency) | Done 2026-11-10 |
-| 6 | Optional AI second opinion (Haiku vs Gemini), kept only if it measurably helps | Planned |
+| 6 | Optional AI second opinion (Haiku vs Gemini), kept only if it measurably helps | Done 2026-11-10 (kept, off by default) |
 | 7 | One-command local setup, phone over Wi-Fi, verified from a fresh clone | Planned |
 | 8 | Static showcase on Vercel | Planned |
 | 9 | README + learning log | Planned |
@@ -236,6 +236,48 @@ homepage; verified end to end through the web app's API proxy.
 
 Known limits: `<aside>` sidebars in non-fiction are skipped along with footnotes; DRM books can't
 be read (by design); EPUBs made by converters keep the converter's mistakes.
+
+**Step 6 (AI second opinion, Option B's AI layer):** kept as an **opt-in** feature
+(`STRUCTURE_AI=off|gemini|claude`, default off). New dependency: `anthropic` 2.7.0 (approved by Ved).
+
+How it works: after the rules run, only *doubtful* lines go to the model: short standalone
+paragraphs (≤60 characters, ≤8 words) that don't end like a sentence. Each is sent with ~60
+characters of text before and after it; the model answers one letter per line (H chapter, S
+sub-heading, X not part of the work, K keep). Guardrails: long lines can never be changed or
+deleted, screenplays are skipped, any provider error keeps the rules' result, and every change is
+listed in the new `notes` field of the parsed document.
+
+Measured (9 harness cases incl. a new deliberately hard one: an X thread with sentence-case chapter
+titles and "Show more" / "Translate post" / view counts mixed in):
+
+| Run | Headings (extra) | Junk spoken | Words lost | Tokens per call |
+|---|---|---|---|---|
+| Rules only | 49/54 (+0) | 5 | 0 | 0 |
+| + Claude Haiku 5.5 | 53/54 (+0) | 0 | 0 | ~460–670 in / 41 out |
+| + Gemini 3.5 Flash-Lite | **54/54 (+0)** | **0** | 0 | ~345–500 in / 40 out |
+
+- On the 8 normal cases there are **0 doubtful lines**, so the AI is never even called: no cost,
+  no risk, no network. On real books (Holmes .txt and .epub) also 0. It only matters for messy pastes.
+- 3 repeated runs each: stable. Gemini 6/6 every time; Claude 5/6 every time (it reads the mid-chapter
+  "The first night" as text, which is defensible).
+- Cost: ~460 input + 41 output tokens ≈ **$0.00007 per import** on Claude Haiku 5.5 ($0.10 / $0.50
+  per million tokens); Gemini Flash-Lite on the free tier costs nothing but counts against its quota.
+- **A real false positive, found and fixed:** on Ved's real Avengers paste the one doubtful line is a
+  bullet point ("The Things fight the Hulk variant"), and Claude first called it a chapter title.
+  The model had only seen the text *after* the line; adding the text *before* it ("…jot point it:")
+  fixed it for both models. General lesson: give a classifier context on both sides.
+- **Rule change found on the way:** a guessed (weak) heading may no longer contain digits, because
+  "48.2K Views" and "11:42 PM" passed the Title Case test. Numbered chapters ("Chapter 3") are
+  strong headings and unaffected. Those lines are now doubtful, so the second opinion can judge them.
+- **Why off by default:** with it off, import is free, instant, deterministic and private (no
+  text leaves the computer) and needs no API key, which matters for anyone cloning the repo. Ved
+  can switch it on in his own `.env` (Gemini scored best and uses the key he already has).
+- Correction to the audit: `.env.example` already listed `GROQ_API_KEY` and `LABEL_PROVIDER` as
+  comments; the audit's grep only matched uncommented lines. `STRUCTURE_AI` and
+  `ANTHROPIC_API_KEY` are now listed the same way.
+
+Known limits: the AI only sees lines the rules call doubtful, so it can't fix a wrong *strong*
+heading or a wrongly merged paragraph; on its own hard case Claude misses one sub-heading.
 
 ### Deferred: could be done later
 PWA / phone app · paid or expressive voices · CI (GitHub Actions running the tests) · Docker

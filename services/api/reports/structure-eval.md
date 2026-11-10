@@ -14,7 +14,8 @@ How well import finds chapters, paragraphs and junk, on one synthetic book rende
 | `unusual_headings`: Bare-word chapter titles ('The Harbour'), next to one-line dialogue | 52/52 (100%) | 6/6 (+0) | 0 | 0 | yes | yes |
 | `publisher_epub`: EPUB with real headings, nav, copyright page, page-break numbers, a footnote | 52/52 (100%) | 6/6 (+0) | 0 | 0 | yes | yes |
 | `calibre_epub`: Converter-made EPUB from a text file: no headings, author 'Unknown' | 52/52 (100%) | 6/6 (+0) | 0 | 0 | yes | yes |
-| **All cases** | **100.0%** | **48/48 (+0)** | **0** | **0** | **8/8** | **8/8** |
+| `hard_social_paste`: Hard: X thread, sentence-case titles, 'Show more' and view counts mixed in | 52/52 (100%) | 1/6 (+0) | 5 | 0 | yes | yes |
+| **All cases** | **100.0%** | **49/54 (+0)** | **5** | **0** | **9/9** | **9/9** |
 
 - **Paragraphs exact:** one block per real paragraph, nothing glued on or split off.
 - **Extra:** blocks wrongly made headings. **Junk spoken:** licence, contents, running headers, references or page numbers left in the text. **Words lost:** real story words missing.
@@ -28,3 +29,6 @@ How well import finds chapters, paragraphs and junk, on one synthetic book rende
 | Step 3: web cleanup | 2026-11-10 | 83.3% | 36/36 (+4) | 0 | 0 | 5/6 | 6/6 |
 | Step 4: PDF rules | 2026-11-10 | 100.0% | 36/36 (+0) | 0 | 0 | 6/6 | 6/6 |
 | Step 5: EPUB import | 2026-11-10 | 100.0% | 48/48 (+0) | 0 | 0 | 8/8 | 8/8 |
+| Step 6: rules only (9 cases incl. hard) | 2026-11-10 | 100.0% | 49/54 (+0) | 5 | 0 | 9/9 | 9/9 |
+| Step 6: rules + Claude Haiku 5.5 | 2026-11-10 | 100.0% | 53/54 (+0) | 0 | 0 | 9/9 | 9/9 |
+| Step 6: rules + Gemini 3.5 Flash-Lite | 2026-11-10 | 100.0% | 54/54 (+0) | 0 | 0 | 9/9 | 9/9 |
