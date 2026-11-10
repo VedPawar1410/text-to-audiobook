@@ -27,6 +27,21 @@ def test_single_line_breaks_between_long_lines_mean_one_paragraph_per_line():
     assert headings(doc) == ["Act One:", "Post-Credits Scene:"]
 
 
+def test_short_paragraphs_one_per_line_are_not_joined_like_wrapped_text():
+    # Each paragraph fits on one line (< 100 characters), as in many X threads: the line ends
+    # tell it apart from a hard-wrapped book, decided once for the whole text
+    lines = [
+        "Act One:",
+        "The lamp turned slowly above the harbour while the keeper wrote in the ledger.",
+        "Nobody remembered who had built the tower, and nobody asked any more.",
+        "Act Two:",
+        "Morning came grey and cold, with a boat that nobody had seen leave.",
+    ]
+    doc = parse_text("My Thread\n\n" + "\n".join(lines))
+    assert [s.title for s in doc.sections] == ["Act One:", "Act Two:"]
+    assert [text for kind, text in blocks(doc) if kind == "paragraph"] == [lines[1], lines[2], lines[4]]
+
+
 def test_hard_wrapped_lines_are_still_joined_and_wrapped_starts_are_not_headings():
     wrapped = "Part of the reason was that the harbour master\nhad gone home early, and the lamp was out."
     doc = parse_text(f"Chapter 1\n\n{wrapped}")

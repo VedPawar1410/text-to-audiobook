@@ -86,5 +86,16 @@
     "words_lost": 0,
     "titles_ok": "9/9",
     "authors_ok": "9/9"
+  },
+  {
+    "label": "Step 7: per-document line-break rule",
+    "date": "2026-11-10",
+    "paragraphs_pct": 100.0,
+    "headings": "49/54",
+    "headings_extra": 0,
+    "junk_spoken": 5,
+    "words_lost": 0,
+    "titles_ok": "9/9",
+    "authors_ok": "9/9"
   }
 ]

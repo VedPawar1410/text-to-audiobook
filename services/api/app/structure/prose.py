@@ -1,6 +1,7 @@
 """Parse prose and markdown: headings, chapters, paragraphs, lists, quotes, scene breaks."""
 
 import re
+from itertools import pairwise
 
 from app.structure.models import Block, Section
 
@@ -102,14 +103,34 @@ def _list_items(lines: list[str]) -> list[str]:
     return [" ".join(item) for item in items]
 
 
-def _is_hard_wrapped(lines: list[str]) -> bool:
-    """Short lines that continue each other (a book or Gutenberg file) get joined; long ones
-    (a paste from X or a web page, one paragraph per line) each stay a paragraph."""
-    return len(lines) == 1 or max(len(line) for line in lines[:-1]) <= WRAP_WIDTH
+LINE_END = (".", "!", "?", '"', "”", "’", ")", "…", ":")
+
+
+def _one_paragraph_per_line(text: str) -> bool:
+    """Decided once for the whole text: is each line a paragraph (a paste from X or a web page)
+    rather than a hard-wrapped book? Of the lines that run on into another line (lists, quotes
+    and headings aside), a wrapped book ends ~20% with sentence punctuation; a paste ~100%."""
+    lines = [line.strip() for line in text.split("\n")]
+    running_on = [
+        line for line, after in pairwise(lines)
+        if line and after and not (LIST_ITEM.match(line) or QUOTE.match(line) or HEADING.match(line))
+    ]  # fmt: skip
+    if len(running_on) < 3:  # too little evidence: keep the default (join wrapped lines)
+        return False
+    return sum(line.endswith(LINE_END) for line in running_on) >= 0.6 * len(running_on)
+
+
+def _is_hard_wrapped(lines: list[str], per_line: bool) -> bool:
+    """Short lines that continue each other (a book or Gutenberg file) get joined; a line longer
+    than any book would wrap at, or a text written one paragraph per line, stays as it is."""
+    if len(lines) == 1:
+        return True
+    return max(len(line) for line in lines[:-1]) <= WRAP_WIDTH and not per_line
 
 
 def _items(text: str):
     """First pass: (kind, text, heading strength) for every chunk, in order."""
+    per_line = _one_paragraph_per_line(text)
 
     def chunk(lines: list[str], alone: bool):
         first = lines[0]
@@ -127,7 +148,7 @@ def _items(text: str):
                 yield "list_item", item, None
         elif all(QUOTE.match(line) for line in lines):
             yield "quote", " ".join(QUOTE.match(line)[1] for line in lines), None
-        elif _is_hard_wrapped(lines):
+        elif _is_hard_wrapped(lines, per_line):
             yield "paragraph", " ".join(lines), None
         else:
             for line in lines:  # one paragraph per line, and a short line among them may be a heading

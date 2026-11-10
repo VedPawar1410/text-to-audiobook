@@ -128,7 +128,7 @@ prepares each step, verifies it, hands over the commands and waits.
 | 4 | PDF rules: indented paragraphs, running headers on ≥3 pages, contents pages with page numbers | Done 2026-11-10 |
 | 5 | EPUB import (no new dependency) | Done 2026-11-10 |
 | 6 | Optional AI second opinion (Haiku vs Gemini), kept only if it measurably helps | Done 2026-11-10 (kept, off by default) |
-| 7 | One-command local setup, phone over Wi-Fi, verified from a fresh clone | Planned |
+| 7 | One-command local setup, phone over Wi-Fi, verified from a fresh clone | Done 2026-11-10 |
 | 8 | Static showcase on Vercel | Planned |
 | 9 | README + learning log | Planned |
 
@@ -278,6 +278,43 @@ titles and "Show more" / "Translate post" / view counts mixed in):
 
 Known limits: the AI only sees lines the rules call doubtful, so it can't fix a wrong *strong*
 heading or a wrongly merged paragraph; on its own hard case Claude misses one sub-heading.
+
+**Step 7 (run it locally, use it from a phone):** `scripts/setup.sh` (once) and
+`scripts/start.sh` (every day). Verified from a **fresh clone** with a throwaway database, under
+macOS's stock **bash 3.2**: setup in 33 s; `start.sh --phone` served the home and /new pages on
+the Wi-Fi address (200), the API answered through the web proxy, the API port refused direct
+connections from the network, and a paste imported through the phone address.
+- **Production server, not `next dev`, for everyday use:** Next.js 16's dev server blocks pages
+  opened from another device ("Blocked cross-origin request to Next.js dev resource"), and the
+  production build is faster. `start.sh` rebuilds only when the web code changed.
+- **Safe default:** `start.sh` serves only this computer; `--phone` opens it to the Wi-Fi network
+  and prints the address. The app has no login, so exposing it is a choice, not the default. The
+  API always listens on 127.0.0.1; the phone reaches it only through the web app's `/api` proxy.
+- **Alternatives considered:** Docker Compose (most portable, but Docker isn't on the dev machine,
+  so it couldn't be verified: deferred); Tailscale for using the phone away from home (free, no
+  card; a device setup, not code: documented, not built); a Cloudflare quick tunnel for live
+  demos (allowed briefly, see §3).
+
+Bugs the fresh-clone test found (none showed on the dev machine):
+1. **The committed web lockfile was out of sync** with package.json (`@emnapi/wasi-threads@1.2.1`
+   vs 1.2.3, `@emnapi/core` missing), so `npm ci`, the reproducible install, refused to run. The
+   dev machine never noticed because `npm install` quietly repairs drift. Fixed with
+   `npm install --package-lock-only` (+71/−3 lines, only optional WebAssembly fallback packages).
+2. **bash 3.2 can't parse an apostrophe inside `${var:-…}`**, so `start.sh` died after building on
+   a stock Mac. Fixed; both scripts pass `/bin/bash -n`.
+3. **Short one-paragraph-per-line pastes were joined.** Step 2's rule treated every block of lines
+   under 100 characters as hard-wrapped, so an X thread with short paragraphs lost its "Act Two:".
+   A first per-block fix regressed the harness (99.8%) and the Holmes PDF (610 → 595), so the rule
+   is now decided **once per text**: of the lines that run on into another line, a wrapped book
+   ends ~20% with sentence punctuation, a paste ~100% (threshold 60%, at least 3 lines of
+   evidence). Harness back to 100%, Holmes PDF 610/611, Holmes text 12/12 stories.
+4. **The tests read the developer's own `.env`:** with `STRUCTURE_AI=gemini` switched on for Ved,
+   one test made a real Gemini call. `conftest.py` now forces `STRUCTURE_AI=off`, as it already
+   did for the Groq key.
+
+Also found: the README's prerequisites never mentioned **ffmpeg**, which recording and export
+need; `setup.sh` checks for it (the README itself is rewritten in step 9).
+Ved's own `.env` now has `STRUCTURE_AI=gemini` (his choice, 2026-11-10); the repo default stays off.
 
 ### Deferred: could be done later
 PWA / phone app · paid or expressive voices · CI (GitHub Actions running the tests) · Docker

@@ -32,3 +32,4 @@ How well import finds chapters, paragraphs and junk, on one synthetic book rende
 | Step 6: rules only (9 cases incl. hard) | 2026-11-10 | 100.0% | 49/54 (+0) | 5 | 0 | 9/9 | 9/9 |
 | Step 6: rules + Claude Haiku 5.5 | 2026-11-10 | 100.0% | 53/54 (+0) | 0 | 0 | 9/9 | 9/9 |
 | Step 6: rules + Gemini 3.5 Flash-Lite | 2026-11-10 | 100.0% | 54/54 (+0) | 0 | 0 | 9/9 | 9/9 |
+| Step 7: per-document line-break rule | 2026-11-10 | 100.0% | 49/54 (+0) | 5 | 0 | 9/9 | 9/9 |
