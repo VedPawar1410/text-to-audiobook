@@ -1,0 +1,1 @@
+{"case": "avengers", "strategy": "C", "provider": "gemini", "lines": 58, "shown": 7, "requests": 1, "usage": [{"in": 271, "out": 30, "think": 0, "s": 10.0}], "labels": {"1": "H1", "3": "H2", "6": "H1", "18": "H2", "30": "H2", "34": "K", "56": "H2"}, "raw_head": "1 H1\n3 H2\n6 H1\n18 H2\n30 H2\n34 K\n56 H2"}

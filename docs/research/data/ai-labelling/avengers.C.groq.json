@@ -1,0 +1,1 @@
+{"case": "avengers", "strategy": "C", "provider": "groq", "lines": 58, "shown": 7, "requests": 1, "usage": [{"in": 326, "out": 199, "think": 175, "s": 0.8, "tpm_left": "7635", "rpd_left": "994"}], "labels": {"3": "H2", "18": "H2", "30": "H2", "56": "H2"}, "raw_head": "3 H2\n18 H2\n30 H2\n56 H2"}

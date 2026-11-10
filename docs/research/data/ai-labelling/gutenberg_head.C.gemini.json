@@ -1,0 +1,1 @@
+{"case": "gutenberg_head", "strategy": "C", "provider": "gemini", "lines": 688, "shown": 140, "requests": 1, "usage": [{"in": 1852, "out": 80, "think": 0, "s": 1.5}], "labels": {}, "raw_head": "9|X\n11|T\n13|A\n15|X\n16|X\n18|X\n20|X\n24|X\n26|T\n28|A\n30|X\n32-43|X\n45|H1\n47|H2\n507|H2"}

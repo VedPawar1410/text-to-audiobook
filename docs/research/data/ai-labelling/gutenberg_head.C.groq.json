@@ -1,0 +1,1 @@
+{"case": "gutenberg_head", "strategy": "C", "provider": "groq", "lines": 688, "shown": 140, "requests": 1, "usage": [{"in": 1546, "out": 316, "think": 286, "s": 2.5, "tpm_left": "5495", "rpd_left": "992"}], "labels": {"11": "T", "13": "A", "26": "H1", "45": "H1", "47": "H2", "509": "H2"}, "raw_head": "11 T\n13 A\n26 H1\n45 H1\n47 H2\n509 H2"}

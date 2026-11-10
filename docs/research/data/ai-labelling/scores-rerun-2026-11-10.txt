@@ -1,0 +1,42 @@
+
+### avengers
+  narrate (today)          paras exact   23/24   ( 95.8%)  headings 4/4 (+1 extra)  junk lines spoken    ~0  real lines lost ?
+  R2 better rules          paras exact   24/24   (100.0%)  headings 4/4 (+1 extra)  junk lines spoken     0  real lines lost 0
+  R rules only             paras exact   23/24   ( 95.8%)  headings 0/4 (+0 extra)  junk lines spoken     1  real lines lost 0
+  R2 + C gemini            paras exact   24/24   (100.0%)  headings 4/4 (+1 extra)  junk lines spoken     0  real lines lost 0
+  C gemini (271/30 tok)    paras exact   24/24   (100.0%)  headings 4/4 (+2 extra)  junk lines spoken     1  real lines lost 0
+  R2 + C groq              paras exact   24/24   (100.0%)  headings 4/4 (+1 extra)  junk lines spoken     0  real lines lost 0
+  C groq (326/199 tok)     paras exact   24/24   (100.0%)  headings 4/4 (+0 extra)  junk lines spoken     1  real lines lost 0
+  A gemini (904/119 tok)   paras exact   24/24   (100.0%)  headings 4/4 (+1 extra)  junk lines spoken     1  real lines lost 0
+  A groq (908/643 tok)     paras exact   24/24   (100.0%)  headings 4/4 (+0 extra)  junk lines spoken     0  real lines lost 0
+
+### wiki
+  narrate (today)          paras exact    3/9    ( 33.3%)  headings 6/6 (+0 extra)  junk lines spoken    ~0  real lines lost ?
+  R2 better rules          paras exact    9/9    (100.0%)  headings 6/6 (+0 extra)  junk lines spoken     0  real lines lost 0
+  R rules only             paras exact    9/9    (100.0%)  headings 6/6 (+3 extra)  junk lines spoken    50  real lines lost 0
+  R2 + C gemini            paras exact    9/9    (100.0%)  headings 6/6 (+0 extra)  junk lines spoken     0  real lines lost 0
+  C gemini (644/53 tok)    paras exact    9/9    (100.0%)  headings 6/6 (+3 extra)  junk lines spoken    28  real lines lost 0
+  R2 + C groq              paras exact    9/9    (100.0%)  headings 6/6 (+0 extra)  junk lines spoken     0  real lines lost 0
+  C groq (597/225 tok)     paras exact    9/9    (100.0%)  headings 6/6 (+3 extra)  junk lines spoken    50  real lines lost 0
+  A gemini (1979/76 tok)   paras exact    8/9    ( 88.9%)  headings 6/6 (+1 extra)  junk lines spoken     1  real lines lost 0
+  A groq (1783/454 tok)    paras exact    9/9    (100.0%)  headings 6/6 (+3 extra)  junk lines spoken     3  real lines lost 0
+
+### gutenberg_head
+  narrate (today)          paras exact  150/150  (100.0%)  headings 3/3 (+0 extra)  junk lines spoken    ~0  real lines lost ?
+  R2 better rules          paras exact  150/150  (100.0%)  headings 3/3 (+0 extra)  junk lines spoken     1  real lines lost 0
+  R rules only             paras exact  150/150  (100.0%)  headings 0/3 (+0 extra)  junk lines spoken    15  real lines lost 0
+  R2 + C gemini            paras exact  149/150  ( 99.3%)  headings 3/3 (+1 extra)  junk lines spoken     0  real lines lost 0
+  C gemini (1852/80 tok)   paras exact  149/150  ( 99.3%)  headings 2/3 (+1 extra)  junk lines spoken     0  real lines lost 0
+  R2 + C groq              paras exact  150/150  (100.0%)  headings 3/3 (+0 extra)  junk lines spoken     1  real lines lost 0
+  C groq (1546/316 tok)    paras exact  150/150  (100.0%)  headings 3/3 (+1 extra)  junk lines spoken    15  real lines lost 0
+  A gemini (9687/765 tok)  paras exact  150/150  (100.0%)  headings 2/3 (+0 extra)  junk lines spoken     0  real lines lost 0
+
+### pdf
+  narrate (today)          paras exact  611/611  (100.0%)  headings 7/7 (+0 extra)  junk lines spoken   ~29  real lines lost ?
+  R2 better rules          paras exact  611/611  (100.0%)  headings 7/7 (+0 extra)  junk lines spoken     1  real lines lost 0
+  R rules only             paras exact  567/611  ( 92.8%)  headings 0/7 (+0 extra)  junk lines spoken   122  real lines lost 0
+  R2 + C gemini            paras exact  610/611  ( 99.8%)  headings 7/7 (+0 extra)  junk lines spoken     0  real lines lost 1
+  C gemini (8217/711 tok)  paras exact  588/611  ( 96.2%)  headings 5/7 (+27 extra)  junk lines spoken    31  real lines lost 1
+  R2 + C groq              paras exact  610/611  ( 99.8%)  headings 7/7 (+0 extra)  junk lines spoken     0  real lines lost 1
+  C groq (6863/3460 tok)   paras exact  595/611  ( 97.4%)  headings 6/7 (+13 extra)  junk lines spoken    21  real lines lost 1
+  A gemini (47900/3291 tok) paras exact  478/611  ( 78.2%)  headings 7/7 (+0 extra)  junk lines spoken   114  real lines lost 0

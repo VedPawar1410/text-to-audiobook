@@ -4,6 +4,9 @@ Everything we chose, everything we tried or considered and dropped, and why — 
 session — so that months from now (or in an interview) the reasoning is still here.
 Updated at every step of the November 2026 revive. Newest session at the bottom.
 
+The evidence behind each decision (inputs, methods, raw numbers, scripts and AI outputs) is in the
+[research notebook](research/README.md).
+
 Status words: **Chosen** (in the product) · **Rejected** (tried or weighed, with evidence) ·
 **Deferred** (worth doing later) · **Superseded** (was the plan, replaced).
 
