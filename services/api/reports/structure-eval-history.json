@@ -9,5 +9,16 @@
     "words_lost": 0,
     "titles_ok": "4/6",
     "authors_ok": "4/6"
+  },
+  {
+    "label": "Step 2: text rules",
+    "date": "2026-11-10",
+    "paragraphs_pct": 83.3,
+    "headings": "36/36",
+    "headings_extra": 6,
+    "junk_spoken": 4,
+    "words_lost": 0,
+    "titles_ok": "5/6",
+    "authors_ok": "5/6"
   }
 ]

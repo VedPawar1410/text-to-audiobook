@@ -6,13 +6,13 @@ How well import finds chapters, paragraphs and junk, on one synthetic book rende
 
 | Case | Paragraphs exact | Headings found (extra) | Junk spoken | Words lost | Title | Author |
 |---|---|---|---|---|---|---|
-| `paste_blank_lines`: Paste with blank lines and 'Chapter One:' headings (control) | 52/52 (100%) | 4/6 (+0) | 0 | 0 | yes | yes |
-| `paste_single_newlines`: X-style paste: single line breaks, 'Act One:' glued to its text | 0/52 (0%) | 0/6 (+0) | 0 | 0 | yes | yes |
-| `gutenberg_style`: Gutenberg .txt: licence, contents page, 'I. THE HARBOUR', hard-wrapped | 52/52 (100%) | 0/6 (+0) | 7 | 0 | **no** | **no** |
-| `book_pdf`: Typeset PDF: indented paragraphs, alternating running headers, page numbers | 0/52 (0%) | 4/6 (+0) | 9 | 0 | **no** | yes |
+| `paste_blank_lines`: Paste with blank lines and 'Chapter One:' headings (control) | 52/52 (100%) | 6/6 (+0) | 0 | 0 | yes | yes |
+| `paste_single_newlines`: X-style paste: single line breaks, 'Act One:' glued to its text | 52/52 (100%) | 6/6 (+0) | 0 | 0 | yes | yes |
+| `gutenberg_style`: Gutenberg .txt: licence, contents page, 'I. THE HARBOUR', hard-wrapped | 52/52 (100%) | 6/6 (+0) | 0 | 0 | yes | yes |
+| `book_pdf`: Typeset PDF: indented paragraphs, alternating running headers, page numbers | 0/52 (0%) | 6/6 (+4) | 0 | 0 | **no** | yes |
 | `web_markdown`: Web article (URL import): reference list and junk metadata author | 52/52 (100%) | 6/6 (+2) | 4 | 0 | yes | **no** |
-| `unusual_headings`: Bare-word chapter titles ('The Harbour'), next to one-line dialogue | 52/52 (100%) | 0/6 (+0) | 0 | 0 | yes | yes |
-| **All cases** | **66.7%** | **14/36 (+2)** | **20** | **0** | **4/6** | **4/6** |
+| `unusual_headings`: Bare-word chapter titles ('The Harbour'), next to one-line dialogue | 52/52 (100%) | 6/6 (+0) | 0 | 0 | yes | yes |
+| **All cases** | **83.3%** | **36/36 (+6)** | **4** | **0** | **5/6** | **5/6** |
 
 - **Paragraphs exact:** one block per real paragraph, nothing glued on or split off.
 - **Extra:** blocks wrongly made headings. **Junk spoken:** licence, contents, running headers, references or page numbers left in the text. **Words lost:** real story words missing.
@@ -22,3 +22,4 @@ How well import finds chapters, paragraphs and junk, on one synthetic book rende
 | Run | Date | Paragraphs exact | Headings (extra) | Junk spoken | Words lost | Titles | Authors |
 |---|---|---|---|---|---|---|---|
 | Step 1: baseline (parser as of PR 16) | 2026-11-10 | 66.7% | 14/36 (+2) | 20 | 0 | 4/6 | 4/6 |
+| Step 2: text rules | 2026-11-10 | 83.3% | 36/36 (+6) | 4 | 0 | 5/6 | 5/6 |

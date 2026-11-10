@@ -6,8 +6,9 @@ The AI director (next stage) only has to add meaning, not find the structure.
 
 import re
 
+from app.structure.cleanup import drop_contents, strip_gutenberg
 from app.structure.models import ParsedDocument, Section, Stats
-from app.structure.prose import CHAPTER, parse_prose
+from app.structure.prose import CHAPTER, ROMAN_HEADING, parse_prose
 from app.structure.screenplay import SLUGLINE, TRANSITION, looks_like_screenplay, parse_screenplay
 from app.structure.sentences import split_sentences
 
@@ -36,9 +37,17 @@ def _leading_title(text: str) -> tuple[str | None, str]:
         return match[1].strip(), rest
     if line.startswith("#") or line[-1] in ".!?,;" or line.endswith(" TO:"):
         return None, text
-    if SLUGLINE.match(line) or TRANSITION.match(line) or CHAPTER.match(line) or BYLINE.match(line):
+    if SLUGLINE.match(line) or TRANSITION.match(line) or CHAPTER.match(line) or BYLINE.match(line) or ROMAN_HEADING.match(line):
         return None, text
     return line, rest
+
+
+def _drop_leading_byline(body: str) -> str:
+    """'by Arthur Conan Doyle' at the top becomes the author, not a 4-word first chapter."""
+    first, _, rest = body.partition("\n\n")
+    if "\n" not in first.strip() and BYLINE.match(first.strip("*_# \n")) and rest.strip():
+        return rest
+    return body
 
 
 # Titles that come from file metadata are often the authoring app's, not the book's
@@ -51,7 +60,8 @@ def clean_title(title: str | None) -> str | None:
     """'Microsoft Word - All Tomorrows.doc' -> 'All Tomorrows'; 'my_book' -> 'my book'."""
     if not title:
         return None
-    title = FILE_EXTENSION.sub("", APP_PREFIX.sub("", title.strip()))
+    title = title.strip().strip("{}\\").strip()  # "}Avengers..." left over from an .rtf
+    title = FILE_EXTENSION.sub("", APP_PREFIX.sub("", title))
     if " " not in title:
         title = title.replace("_", " ")
     return re.sub(r"\s+", " ", title).strip() or None
@@ -116,7 +126,10 @@ def _stats(text: str, sections: list[Section]) -> Stats:
 
 def parse_text(text: str, title: str | None = None, author: str | None = None) -> ParsedDocument:
     text = normalize(text)
+    text, header_title, header_author = strip_gutenberg(text)  # licence text is never read aloud
+    text = drop_contents(text)
     detected_title, body = _leading_title(text)
+    body = _drop_leading_byline(body)
 
     if looks_like_screenplay(body):
         doc_format, sections = "screenplay", parse_screenplay(body)
@@ -128,8 +141,8 @@ def parse_text(text: str, title: str | None = None, author: str | None = None) -
     sections = split_long_sections(sections)
     _finalize(sections)
     return ParsedDocument(
-        title=clean_title(detected_title or title),
-        author=(author or "").strip() or find_byline(text),
+        title=clean_title(detected_title or header_title or title),
+        author=(author or "").strip() or find_byline(text) or header_author,
         format=doc_format,
         sections=sections,
         stats=_stats(text, sections),

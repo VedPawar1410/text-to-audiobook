@@ -123,7 +123,7 @@ prepares each step, verifies it, hands over the commands and waits.
 | Step | What | Status |
 |---|---|---|
 | 1 | Structure-eval harness (`services/api/structure_eval/`, `reports/structure-eval.md`) + this log | Done 2026-11-10 |
-| 2 | Text rules: glued headings, Roman numerals, "Scene:" headings, contents pages, Gutenberg licence, bylines, `***` bug, junk characters | Planned |
+| 2 | Text rules: glued headings, Roman numerals, "Scene:" headings, contents pages, Gutenberg licence, bylines, `***` bug, junk characters | Done 2026-11-10 |
 | 3 | Web cleanup: reference sections, junk author metadata | Planned |
 | 4 | PDF rules: indented paragraphs, running headers on ≥3 pages, contents pages with page numbers | Planned |
 | 5 | EPUB import (no new dependency) | Planned |
@@ -134,6 +134,29 @@ prepares each step, verifies it, hands over the commands and waits.
 
 **Baseline (step 1, synthetic harness, parser as of PR 16):** paragraphs exact 66.7%,
 headings 14/36 (+2 extra), junk spoken 20, words lost 0, titles 4/6, authors 4/6.
+
+**Step 2 (text rules):** paragraphs exact 66.7% → 83.3%, headings 14/36 → **36/36**, junk 20 → 4,
+words lost 0 → 0. Real inputs: the Avengers paste gets its 4 acts (incl. "Post-Credits Scene:");
+the full Holmes text gets all 12 stories, the right title/author and 0 licence words.
+
+How the rules work, and why:
+- **Cleanup before parsing** (`app/structure/cleanup.py`): Gutenberg START/END markers (licence
+  dropped, its `Title:`/`Author:` kept as metadata); contents pages ("Contents" + its list, or ≥3
+  "Title …… 12" lines). Removing junk *before* parsing means no later stage has to know about it.
+- **Hard-wrapped vs one-paragraph-per-line**: if any line in a block is longer than 100
+  characters, the lines are paragraphs (a paste from X/web); otherwise they're a wrapped
+  paragraph and get joined (a book/Gutenberg file). Books wrap at ~60–80 characters.
+- **Heading strength, two passes**: STRONG headings ("Chapter 3", "I. THE HARBOUR",
+  "Post-Credits Scene:") always start chapters. WEAK ones (a short Title Case or CAPS line on its
+  own, or "The First Night:") start chapters only when the text has no strong headings —
+  otherwise they're sub-headings. A heading glued to its text ("Act One:\nWe open…") is split off,
+  but only if it *looks* like a heading, so a wrapped line like "Part of the reason was that" isn't.
+- Title Case is required for colon headings so "What he remembered afterwards:" stays text.
+- A byline under the title becomes the author and is no longer spoken as a 4-word first chapter.
+
+Known risks (accepted): a short Title Case line ending in ":" such as a letter's "Dear Sir:" can
+become a sub-heading; a bare first line ("The Harbour") is taken as the book title. The PDF's
+alternating running headers now appear as fake sub-headings instead of junk until step 4.
 
 ### Deferred: could be done later
 PWA / phone app · paid or expressive voices · CI (GitHub Actions running the tests) · Docker
