@@ -1,6 +1,8 @@
 // Typed client for the FastAPI service. Every call goes through /api/*,
 // which next.config.ts proxies to the API, so the browser sees one origin.
 
+import { DEMO, DEMO_MESSAGE } from "./demo";
+
 export type Stats = {
   characters: number;
   words: number;
@@ -127,6 +129,8 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // The showcase has no backend: reads come from a snapshot, writes explain themselves
+  if (DEMO && init?.method && init.method !== "GET") throw new ApiError(DEMO_MESSAGE, 405);
   const response = await fetch(`/api${path}`, init);
   if (!response.ok) {
     let message = `Something went wrong (${response.status}).`;
@@ -154,6 +158,7 @@ export type AskRequest = { question: string; selection: string | null; segment_i
 
 /** Yields the answer as it's written (the API streams plain text). */
 export async function* askStream(documentId: string, body: AskRequest): AsyncGenerator<string> {
+  if (DEMO) throw new ApiError(DEMO_MESSAGE, 405); // answering needs the local API and an LLM key
   const response = await fetch(`/api/documents/${documentId}/ask`, json("POST", body));
   if (!response.ok || !response.body) {
     let message = "Couldn't ask right now.";
@@ -205,6 +210,7 @@ export const api = {
 
   voices: () => request<Voice[]>("/tts/voices"),
   previewVoice: async (text: string, voice: string, speed: number) => {
+    if (DEMO) throw new ApiError(DEMO_MESSAGE, 405); // previews are recorded live by the local voice engine
     const response = await fetch("/api/tts/preview", json("POST", { text, voice, speed }));
     if (!response.ok) throw new ApiError("Couldn't play this voice.", response.status);
     return response.blob();

@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PillLink, SECONDARY } from "@/components/pill-link";
 import { ErrorNote, Skeleton } from "@/components/ui";
 import { api, type DocumentSummary, type Status } from "@/lib/api";
+import { DEMO } from "@/lib/demo";
 import { formatDuration, genreLabel } from "@/lib/vocabulary";
 
 const STATUS: Record<Status, { label: string; dot: string }> = {
@@ -133,9 +134,11 @@ export function Library() {
               </button>
             </>
           ) : (
-            <button type="button" onClick={() => setSelecting(true)} className={SECONDARY}>
-              Select
-            </button>
+            !DEMO && (
+              <button type="button" onClick={() => setSelecting(true)} className={SECONDARY}>
+                Select
+              </button>
+            )
           )}
         </div>
       </div>
@@ -266,7 +269,7 @@ function BookCard({ document, selecting, selected, onToggle, onDelete }: BookCar
                 <path d="M3.5 8.5 6.5 11.5 12.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </span>
-          ) : (
+          ) : DEMO ? null : (
             <button
               type="button"
               onClick={onDelete}

@@ -129,7 +129,7 @@ prepares each step, verifies it, hands over the commands and waits.
 | 5 | EPUB import (no new dependency) | Done 2026-11-10 |
 | 6 | Optional AI second opinion (Haiku vs Gemini), kept only if it measurably helps | Done 2026-11-10 (kept, off by default) |
 | 7 | One-command local setup, phone over Wi-Fi, verified from a fresh clone | Done 2026-11-10 |
-| 8 | Static showcase on Vercel | Planned |
+| 8 | Static showcase on Vercel | Built and verified 2026-11-10 (deploy: Ved, in the Vercel dashboard) |
 | 9 | README + learning log | Planned |
 
 **Baseline (step 1, synthetic harness, parser as of PR 16):** paragraphs exact 66.7%,
@@ -315,6 +315,35 @@ Bugs the fresh-clone test found (none showed on the dev machine):
 Also found: the README's prerequisites never mentioned **ffmpeg**, which recording and export
 need; `setup.sh` checks for it (the README itself is rewritten in step 9).
 Ved's own `.env` now has `STRUCTURE_AI=gemini` (his choice, 2026-11-10); the repo default stays off.
+
+**Step 8 (a showcase to show people):** the same Next.js app, built with `NEXT_PUBLIC_DEMO=1`,
+plays one pre-recorded public-domain book with no backend. For Vercel's free Hobby plan (no card).
+- **The book:** O. Henry's *The Gift of the Magi* (1905, public domain; Ved's pick). Made with the
+  real pipeline on the local app: the raw Project Gutenberg file imported cleanly (title and author
+  right, 0 licence words, 2,057 words); the director took ~35 s (romance; 4 voices: Narrator, Della,
+  Madame Sofronie, Jim; 129 lines, varied emotions); recording took **192 s for 714 s of audio
+  (3.7× real time)** on the M1.
+- **How it works:** `scripts/export_showcase.py <id>` saves the same read-only responses the
+  browser fetches (book, render status, chapter manifest and MP3, voice list, health) under
+  `apps/web/public/demo/` (5.6 MB). In a demo build, `next.config.ts` rewrites those `/api/...`
+  paths to the static files instead of proxying to FastAPI. The app's own code is unchanged.
+- **Writes explain themselves** through one choke point: in a demo build every non-GET request,
+  Ask AI and voice previews throw an `ApiError` with a "read-only showcase" message, which every
+  component already displays. Plus three UX touches: the nav says "Showcase · run it yourself ↗"
+  (linking to GitHub) instead of the studio status, `/new` shows a notice instead of the form, and
+  the library hides its delete controls.
+- **Privacy:** the library list in the snapshot is filtered to the one book; checked for other
+  books, local paths and API keys before committing. `.gitignore` still ignores every `*.mp3`
+  except `apps/web/public/demo/**`.
+- **Safety for local use:** `start.sh` now rebuilds unless the existing build is marked as a local
+  build, so a showcase build left in `.next` can never be served as the real app.
+- **Verified** in a production build with the API stopped: all pages 200; every read endpoint
+  served from the snapshot; audio range requests 206 (seeking works); playback with word
+  highlighting on desktop; Ask AI shows the read-only message; the phone-size reader and `/new`
+  notice look right; no console errors.
+- **Alternatives considered:** a separate static demo page (duplicates the reader: rejected);
+  hosting the API too (no free host can run Kokoro, see §3); recording voice previews for the cast
+  cards (more files for a small gain: not done, previews explain themselves instead).
 
 ### Deferred: could be done later
 PWA / phone app · paid or expressive voices · CI (GitHub Actions running the tests) · Docker

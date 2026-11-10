@@ -24,10 +24,11 @@ if [ ! -d "$API/.venv" ] || [ ! -d "$WEB/node_modules" ]; then
   exit 1
 fi
 
-# Rebuild the web app only when its code changed since the last build
-if [ ! -f "$WEB/.next/BUILD_ID" ] || [ -n "$(cd "$WEB" && find src next.config.ts package-lock.json -newer .next/BUILD_ID 2>/dev/null | head -1)" ]; then
+# Rebuild the web app only when its code changed since the last build, or when the last build
+# wasn't made here (e.g. a showcase build with NEXT_PUBLIC_DEMO=1, which has no backend)
+if [ ! -f "$WEB/.next/narrate-local-build" ] || [ -n "$(cd "$WEB" && find src next.config.ts package-lock.json -newer .next/narrate-local-build 2>/dev/null | head -1)" ]; then
   echo "Building the web app (about a minute, only after changes)..."
-  (cd "$WEB" && npm run build >/dev/null)
+  (cd "$WEB" && NEXT_PUBLIC_DEMO= npm run build >/dev/null && touch .next/narrate-local-build)
 fi
 
 (cd "$API" && exec uv run --no-sync uvicorn app.main:app --host 127.0.0.1 --port 8000 --log-level warning) &

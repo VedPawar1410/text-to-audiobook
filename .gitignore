@@ -28,6 +28,8 @@ services/api/data/
 *.mp3
 *.m4a
 *.m4b
+# ...except the showcase book's public-domain recording (scripts/export_showcase.py)
+!apps/web/public/demo/**/*.mp3
 
 # Local-only Claude Code skills (third-party, installed per machine)
 .claude/skills/

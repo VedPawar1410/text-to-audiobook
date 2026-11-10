@@ -1,7 +1,29 @@
 import type { Metadata } from "next";
+import { Bezel } from "@/components/bezel";
 import { NewDocument } from "@/components/new/new-document";
+import { PillLink } from "@/components/pill-link";
 import { Reveal } from "@/components/reveal";
 import { Eyebrow } from "@/components/ui";
+import { DEMO, DEMO_MESSAGE, REPO_URL } from "@/lib/demo";
+
+// In the showcase build there's no API to import into: explain, and offer the recorded book
+function ShowcaseNotice() {
+  return (
+    <Bezel>
+      <div className="flex flex-col items-start gap-6 p-8 md:p-12">
+        <p className="max-w-xl text-lg leading-relaxed text-ink-muted">{DEMO_MESSAGE}</p>
+        <div className="flex flex-wrap gap-3">
+          <PillLink href="/documents" icon="right">
+            Listen to the recorded book
+          </PillLink>
+          <a href={REPO_URL} target="_blank" rel="noopener" className="flex min-h-11 items-center rounded-full border border-hairline px-5 text-sm text-ink-muted hover:text-ink">
+            Get the code on GitHub ↗
+          </a>
+        </div>
+      </div>
+    </Bezel>
+  );
+}
 
 export const metadata: Metadata = { title: "New book · Narrate" };
 
@@ -18,7 +40,7 @@ export default function NewPage() {
         </p>
       </Reveal>
       <Reveal delay={0.15} className="mt-10">
-        <NewDocument />
+        {DEMO ? <ShowcaseNotice /> : <NewDocument />}
       </Reveal>
     </main>
   );

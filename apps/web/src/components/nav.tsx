@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DEMO, REPO_URL } from "@/lib/demo";
 import { HealthDot } from "./health-dot";
 
 const LINK =
@@ -14,7 +15,15 @@ export function Nav() {
           Narrate
         </Link>
         <span aria-hidden className="h-4 w-px bg-hairline" />
-        <HealthDot />
+        {DEMO ? (
+          // The showcase has no studio behind it: say so, and point to where the real one lives
+          <a href={REPO_URL} target="_blank" rel="noopener" className="flex min-h-11 items-center gap-2 font-mono text-xs text-ink-muted hover:text-ink">
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-tungsten" />
+            Showcase<span className="hidden md:inline"> · run it yourself ↗</span>
+          </a>
+        ) : (
+          <HealthDot />
+        )}
         <Link href="/new" className={LINK}>
           New
         </Link>
