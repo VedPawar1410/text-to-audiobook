@@ -7,7 +7,7 @@ const STEPS = [
   {
     n: "01",
     title: "Bring any text",
-    body: "Paste a script, drop a PDF, or link an article. There's no length limit, so whole books are fine.",
+    body: "Paste a script, drop an EPUB or PDF, or link an article. There's no length limit, so whole books are fine.",
   },
   {
     n: "02",
@@ -21,7 +21,7 @@ const STEPS = [
   },
 ];
 
-const INPUTS = ["Paste text", ".txt", ".md", "PDF", "Web link", "Screenplays"];
+const INPUTS = ["Paste text", "EPUB", "PDF", ".txt", ".md", "Web link", "Screenplays"];
 
 export default function Home() {
   return (

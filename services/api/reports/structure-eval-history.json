@@ -42,5 +42,16 @@
     "words_lost": 0,
     "titles_ok": "6/6",
     "authors_ok": "6/6"
+  },
+  {
+    "label": "Step 5: EPUB import",
+    "date": "2026-11-10",
+    "paragraphs_pct": 100.0,
+    "headings": "48/48",
+    "headings_extra": 0,
+    "junk_spoken": 0,
+    "words_lost": 0,
+    "titles_ok": "8/8",
+    "authors_ok": "8/8"
   }
 ]

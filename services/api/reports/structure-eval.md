@@ -12,7 +12,9 @@ How well import finds chapters, paragraphs and junk, on one synthetic book rende
 | `book_pdf`: Typeset PDF: indented paragraphs, alternating running headers, page numbers | 52/52 (100%) | 6/6 (+0) | 0 | 0 | yes | yes |
 | `web_markdown`: Web article (URL import): reference list and junk metadata author | 52/52 (100%) | 6/6 (+0) | 0 | 0 | yes | yes |
 | `unusual_headings`: Bare-word chapter titles ('The Harbour'), next to one-line dialogue | 52/52 (100%) | 6/6 (+0) | 0 | 0 | yes | yes |
-| **All cases** | **100.0%** | **36/36 (+0)** | **0** | **0** | **6/6** | **6/6** |
+| `publisher_epub`: EPUB with real headings, nav, copyright page, page-break numbers, a footnote | 52/52 (100%) | 6/6 (+0) | 0 | 0 | yes | yes |
+| `calibre_epub`: Converter-made EPUB from a text file: no headings, author 'Unknown' | 52/52 (100%) | 6/6 (+0) | 0 | 0 | yes | yes |
+| **All cases** | **100.0%** | **48/48 (+0)** | **0** | **0** | **8/8** | **8/8** |
 
 - **Paragraphs exact:** one block per real paragraph, nothing glued on or split off.
 - **Extra:** blocks wrongly made headings. **Junk spoken:** licence, contents, running headers, references or page numbers left in the text. **Words lost:** real story words missing.
@@ -25,3 +27,4 @@ How well import finds chapters, paragraphs and junk, on one synthetic book rende
 | Step 2: text rules | 2026-11-10 | 83.3% | 36/36 (+6) | 4 | 0 | 5/6 | 5/6 |
 | Step 3: web cleanup | 2026-11-10 | 83.3% | 36/36 (+4) | 0 | 0 | 5/6 | 6/6 |
 | Step 4: PDF rules | 2026-11-10 | 100.0% | 36/36 (+0) | 0 | 0 | 6/6 | 6/6 |
+| Step 5: EPUB import | 2026-11-10 | 100.0% | 48/48 (+0) | 0 | 0 | 8/8 | 8/8 |

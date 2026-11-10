@@ -10,6 +10,7 @@ from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field, HttpUrl
 
 from app.ingest import IngestError
+from app.ingest.epub import text_from_epub
 from app.ingest.files import TEXT_EXTENSIONS, decode_text
 from app.ingest.pdf import text_from_pdf
 from app.ingest.url import text_from_url
@@ -50,7 +51,10 @@ def _file_to_text(name: str, data: bytes) -> tuple[str, str | None, str | None]:
     if extension == ".pdf":
         text, title, author = text_from_pdf(data)
         return text, title or Path(name).stem, author
-    raise HTTPException(status_code=415, detail="Supported files: .txt, .md and .pdf")
+    if extension == ".epub":
+        text, title, author = text_from_epub(data)
+        return text, title or Path(name).stem, author
+    raise HTTPException(status_code=415, detail="Supported files: .txt, .md, .pdf and .epub")
 
 
 @router.post("/file", response_model=ParsedDocument)

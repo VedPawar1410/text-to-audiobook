@@ -126,7 +126,7 @@ prepares each step, verifies it, hands over the commands and waits.
 | 2 | Text rules: glued headings, Roman numerals, "Scene:" headings, contents pages, Gutenberg licence, bylines, `***` bug, junk characters | Done 2026-11-10 |
 | 3 | Web cleanup: reference sections, junk author metadata | Done 2026-11-10 |
 | 4 | PDF rules: indented paragraphs, running headers on ≥3 pages, contents pages with page numbers | Done 2026-11-10 |
-| 5 | EPUB import (no new dependency) | Planned |
+| 5 | EPUB import (no new dependency) | Done 2026-11-10 |
 | 6 | Optional AI second opinion (Haiku vs Gemini), kept only if it measurably helps | Planned |
 | 7 | One-command local setup, phone over Wi-Fi, verified from a fresh clone | Planned |
 | 8 | Static showcase on Vercel | Planned |
@@ -206,6 +206,36 @@ Decisions and limits recorded:
   only clearly short last lines split paragraphs. Loosening the rule would split real paragraphs.
 - **Known limit:** a chapter opening whose bare-word title ("The Harbour") sits alone in the
   header slot on a single page is treated as a running header. Scanned PDFs still need OCR.
+
+**Step 5 (EPUB import):** two new harness cases (a publisher-style EPUB with nav, cover,
+copyright page, page-break numbers and a footnote; a converter-made EPUB with no headings and
+author "Unknown") both score perfectly: harness now **100% / 48/48 / 0 junk / 0 lost / 8/8 / 8/8**.
+The harness was checked to *see* EPUB failures: a naive "strip all tags" reader scores 34/52
+paragraphs, 11 junk, 8 words lost on the same case. Real files: the Gutenberg Holmes EPUB → all
+12 stories, right title/author, no licence; Ved's Calibre Avengers EPUB → falls back to the text
+rules and finds all 4 acts; a converter-made summary EPUB → 1,183 → 231 headings (the rest is that
+converter's own mess, not targeted). Web: `.epub` accepted by the file picker and listed on the
+homepage; verified end to end through the web app's API proxy.
+- **Standard library only** (`zipfile`, `xml.etree`, `html.parser`), not lxml: lxml is installed
+  only as trafilatura's dependency, and relying on it would be relying on someone else's choice.
+- **EPUB → markdown → the normal parser**: one structure pipeline for every format, so the step
+  2–3 rules (Gutenberg, contents, back matter, author checks) apply to EPUBs for free.
+- **What's skipped:** spine items marked `linear="no"`, the nav document, `epub:type` toc /
+  landmarks / page-list / pagebreak / footnotes / endnotes / copyright-page / index, `<table>`,
+  `<aside>`, `<sup>`, `<figure>`, Gutenberg's `pg-header`/`pg-footer` and `pagenum` markers, the
+  title page's own title/byline headings, a "Contents" heading, and headings with nothing to read
+  before the next heading of the same level (part-title or contents pages).
+- **Heading depth is relative to the book**: the shallowest heading level actually kept is a
+  chapter ("##"), anything deeper a sub-heading ("###").
+- **Explicit structure beats guessing** (a change in `prose.py`): when a text has real
+  (markdown) headings, as every EPUB and web article does, the step-2 "weak heading" guesses are
+  switched off, so a short `<p>` stays a paragraph. Strong patterns ("Chapter 3") still apply.
+- **Safety:** XML with `<!ENTITY` is refused (billion-laughs), uncompressed text is capped at
+  100 MB (zip bombs), and DRM-encrypted text gives a clear error while font obfuscation (common
+  and harmless) is allowed.
+
+Known limits: `<aside>` sidebars in non-fiction are skipped along with footnotes; DRM books can't
+be read (by design); EPUBs made by converters keep the converter's mistakes.
 
 ### Deferred: could be done later
 PWA / phone app · paid or expressive voices · CI (GitHub Actions running the tests) · Docker

@@ -145,6 +145,9 @@ def parse_prose(text: str) -> tuple[str | None, list[Section]]:
         (kind == "heading" and strength == STRONG) or (kind == "markdown_heading" and strength <= 2)
         for kind, _, strength in items
     )
+    # Explicit structure beats guessing: when the text has real (markdown) headings, as every
+    # EPUB and web article does, a short Title Case line is a paragraph, not a heading.
+    has_markdown = any(kind == "markdown_heading" for kind, _, _ in items)
 
     sections = [Section()]
 
@@ -162,6 +165,8 @@ def parse_prose(text: str) -> tuple[str | None, list[Section]]:
     for kind, value, strength in items:
         if kind == "scene_break":
             sections[-1].blocks.append(Block(kind="scene_break", text=""))
+        elif kind == "heading" and strength == WEAK and has_markdown:
+            add("paragraph", value)
         elif kind in ("markdown_heading", "heading"):
             if kind == "markdown_heading":
                 starts_chapter = strength <= 2  # "#"/"##" are chapters, "###" and deeper sub-headings

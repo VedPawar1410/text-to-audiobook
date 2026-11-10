@@ -203,7 +203,101 @@ def unusual_headings(chapters: list[Chapter]) -> Case:
     return Case("unusual_headings", "Bare-word chapter titles ('The Harbour'), next to one-line dialogue", "text", "\n".join(out), truth)
 
 
+def _epub(documents: list[tuple[str, str, str]], title: str, author: str | None) -> bytes:
+    """A minimal valid EPUB 3. documents: (file name, "nav" / "linear-no" / "", xhtml body)."""
+    import io
+    import zipfile
+    from html import escape
+
+    items, itemrefs = [], []
+    for n, (name, role, _) in enumerate(documents):
+        properties = ' properties="nav"' if role == "nav" else ""
+        linear = ' linear="no"' if role == "linear-no" else ""
+        items.append(f'<item id="d{n}" href="{name}" media-type="application/xhtml+xml"{properties}/>')
+        itemrefs.append(f'<itemref idref="d{n}"{linear}/>')
+    creator = f"<dc:creator>{escape(author)}</dc:creator>" if author else ""
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr(zipfile.ZipInfo("mimetype"), "application/epub+zip")  # first and uncompressed
+        archive.writestr("META-INF/container.xml", (
+            '<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">'
+            '<rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>'
+            "</rootfiles></container>"
+        ))  # fmt: skip
+        archive.writestr("OEBPS/content.opf", (
+            '<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id">'
+            '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="id">ledger</dc:identifier>'
+            f"<dc:title>{escape(title)}</dc:title>{creator}<dc:language>en</dc:language></metadata>"
+            f"<manifest>{''.join(items)}</manifest><spine>{''.join(itemrefs)}</spine></package>"
+        ))  # fmt: skip
+        for name, _, body in documents:
+            archive.writestr(f"OEBPS/{name}", (
+                '<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" '
+                f'xmlns:epub="http://www.idpf.org/2007/ops"><head><title>x</title></head><body>{body}</body></html>'
+            ))  # fmt: skip
+    return buffer.getvalue()
+
+
+def publisher_epub(chapters: list[Chapter]) -> Case:
+    """A well-made EPUB: real <h2>/<h3> headings, plus a cover, navigation, a copyright page,
+    page-break markers carrying page numbers, and a footnote: none of which may be read."""
+    from html import escape
+
+    links = "".join(f'<li><a href="c{n}.xhtml">{escape(c.name)}</a></li>' for n, c in enumerate(chapters))
+    documents = [
+        ("cover.xhtml", "linear-no", "<p>Cover image</p>"),
+        ("nav.xhtml", "nav", f'<nav epub:type="toc"><h1>Contents</h1><ol>{links}</ol></nav>'),
+        ("title.xhtml", "", f"<h1>{escape(TITLE)}</h1><p>by {escape(AUTHOR)}</p>"),
+        ("copyright.xhtml", "", ('<section epub:type="copyright-page"><p>Copyright Mara Ellison. '
+                                 "All rights reserved. No part of this book may be reproduced.</p></section>")),
+    ]  # fmt: skip
+    headings, page = [], 4
+    for number, chapter in enumerate(chapters):
+        headings.append(chapter.name)
+        body = [f'<section epub:type="chapter"><h2>{escape(chapter.name)}</h2>']
+        for index, (kind, text) in enumerate(chapter.items):
+            if kind == "sub":
+                headings.append(text)
+                body.append(f"<h3>{escape(text)}</h3>")
+            elif index % 5 == 4:  # a page break in mid-paragraph, as print-replica EPUBs have
+                page += 1
+                cut = text.index(" ", len(text) // 2)
+                marker = f'<span epub:type="pagebreak" id="p{page}">{page}</span>'
+                body.append(f"<p>{escape(text[:cut])}{marker}{escape(text[cut:])}</p>")
+            else:
+                body.append(f"<p>{escape(text)}</p>")
+        if number == 0:
+            body.append('<aside epub:type="footnote"><p>The harbour was rebuilt twice in living memory.</p></aside>')
+        documents.append((f"c{number}.xhtml", "", "".join(body) + "</section>"))
+    junk = ["Cover image", "All rights reserved", "rebuilt twice in living memory", "Contents"]
+    truth = Truth(TITLE, AUTHOR, headings, _paragraphs(chapters), junk)
+    return Case("publisher_epub", "EPUB with real headings, nav, copyright page, page-break numbers, a footnote",
+                "epub", _epub(documents, TITLE, AUTHOR), truth, count_stray_numbers=True)
+
+
+def calibre_epub(chapters: list[Chapter]) -> Case:
+    """What an online converter (CloudConvert, i.e. Calibre) makes from a text file: every line a
+    <p class="calibre2">, no real headings, author "Unknown". The text rules must still work."""
+    from html import escape
+
+    acts = ["Act One:", "Act Two:", "Act Three", "Post-Credits Scene:"]
+    paragraphs, headings = [f"{TITLE} full story"], []
+    for number, chapter in enumerate(chapters):
+        headings.append(acts[number])
+        paragraphs.append(acts[number])
+        for kind, text in chapter.items:
+            if kind == "sub":
+                headings.append(f"{text}:")
+            paragraphs.append(f"{text}:" if kind == "sub" else text)
+    body = "".join(f'<p class="calibre2">{escape(p)}</p>' for p in paragraphs)
+    truth = Truth(f"{TITLE} full story", None, headings, _paragraphs(chapters))
+    data = _epub([("index_split_000.html", "", body)], f"{TITLE} full story", "Unknown")
+    return Case("calibre_epub", "Converter-made EPUB from a text file: no headings, author 'Unknown'", "epub", data, truth)
+
+
 def all_cases() -> list[Case]:
     chapters = build_book()
-    return [render(chapters) for render in (paste_blank_lines, paste_single_newlines, gutenberg_style,
-                                             book_pdf, web_markdown, unusual_headings)]
+    renderers = (paste_blank_lines, paste_single_newlines, gutenberg_style, book_pdf, web_markdown,
+                 unusual_headings, publisher_epub, calibre_epub)  # fmt: skip
+    return [render(chapters) for render in renderers]

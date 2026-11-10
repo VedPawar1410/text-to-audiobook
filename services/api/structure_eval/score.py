@@ -13,6 +13,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 
+from app.ingest.epub import text_from_epub
 from app.ingest.pdf import text_from_pdf
 from app.structure import parse_text
 from app.structure.models import ParsedDocument
@@ -23,8 +24,9 @@ HEADING_KINDS = ("heading", "scene_heading")
 
 def import_case(case: Case) -> ParsedDocument:
     """The same calls the /ingest routes make."""
-    if case.kind == "pdf":
-        text, title, author = text_from_pdf(case.payload)
+    if case.kind in ("pdf", "epub"):
+        reader = text_from_pdf if case.kind == "pdf" else text_from_epub
+        text, title, author = reader(case.payload)
         return parse_text(text, title=title or case.title_hint, author=author)
     return parse_text(case.payload, title=case.title_hint, author=case.author_hint)
 

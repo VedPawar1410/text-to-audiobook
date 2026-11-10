@@ -16,7 +16,7 @@ const SOURCES: { id: Source; label: string }[] = [
   { id: "link", label: "Link" },
 ];
 
-const ACCEPT = ".txt,.md,.markdown,.pdf";
+const ACCEPT = ".txt,.md,.markdown,.pdf,.epub";
 
 /** Pick a source → the API parses it → preview → save and start the director. */
 export function NewDocument() {
@@ -161,7 +161,7 @@ export function NewDocument() {
                 onChange={(e) => pickFile(e.target.files?.[0])}
               />
               <span className="font-display text-2xl md:text-3xl">Drop a file here</span>
-              <span className="text-ink-muted">.txt, .md or .pdf, up to 25 MB</span>
+              <span className="text-ink-muted">EPUB, PDF, .txt or .md, up to 25 MB</span>
               {/* Dragging is never the only way: the picker works by click or keyboard */}
               <span className="min-h-11 rounded-full border border-hairline px-5 py-2.5 text-sm transition-colors peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-tungsten hover:border-ink/30">
                 {busy === "reading" ? "Reading…" : "Choose a file"}
