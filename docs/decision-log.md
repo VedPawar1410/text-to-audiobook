@@ -129,8 +129,8 @@ prepares each step, verifies it, hands over the commands and waits.
 | 5 | EPUB import (no new dependency) | Done 2026-11-10 |
 | 6 | Optional AI second opinion (Haiku vs Gemini), kept only if it measurably helps | Done 2026-11-10 (kept, off by default) |
 | 7 | One-command local setup, phone over Wi-Fi, verified from a fresh clone | Done 2026-11-10 |
-| 8 | Static showcase on Vercel | Built and verified 2026-11-10 (deploy: Ved, in the Vercel dashboard) |
-| 9 | README + learning log | Planned |
+| 8 | Static showcase on Vercel | Live 2026-11-10: https://text-to-audiobook-blond.vercel.app |
+| 9 | README + learning log | Done 2026-11-10 |
 
 **Baseline (step 1, synthetic harness, parser as of PR 16):** paragraphs exact 66.7%,
 headings 14/36 (+2 extra), junk spoken 20, words lost 0, titles 4/6, authors 4/6.
@@ -341,9 +341,29 @@ plays one pre-recorded public-domain book with no backend. For Vercel's free Hob
   served from the snapshot; audio range requests 206 (seeking works); playback with word
   highlighting on desktop; Ask AI shows the read-only message; the phone-size reader and `/new`
   notice look right; no console errors.
+- **Live** at https://text-to-audiobook-blond.vercel.app (Vercel Hobby, root directory `apps/web`,
+  `NEXT_PUBLIC_DEMO=1`; deployed by Ved; every push to `main` redeploys). Checked after deploy: all
+  5 pages 200 (0.2–1.3 s); every snapshot endpoint 200; audio range request 206; the full 5.7 MB
+  MP3 in 1.7 s; unknown books 404; playback with word highlighting and auto-scroll; phone-size
+  home page renders; no console errors.
 - **Alternatives considered:** a separate static demo page (duplicates the reader: rejected);
   hosting the API too (no free host can run Kokoro, see §3); recording voice previews for the cast
   cards (more files for a small gain: not done, previews explain themselves instead).
+
+**Showcase polish (after step 8):** on the showcase, the homepage's main button reads "Listen to
+the showcase" and opens the reader directly (the local app keeps "Start a new book"); the book's id
+is `SHOWCASE_BOOK` in `apps/web/src/lib/demo.ts`.
+
+**Step 9 (README + learning log):** the README was rewritten around measured results (headline
+table from the harness, real-input before/after, performance), the run/test commands actually
+used in the revive, deployment, honest limitations, and a two-layer learning log (Layer 1: the
+build's mistakes with evidence; Layer 2: the revive's decisions and why). This log stays the
+detailed record; the README links to it.
+
+**Revive in one line:** 10 commits on 2026-11-10, each verified and pushed by Ved; import quality
+from 66.7% paragraphs / 14 of 36 headings / 20 junk to 100% / 54 of 54 (with the optional second
+opinion) / 0 junk with 0 words lost; EPUB added; runs locally in one command and on a phone over
+Wi-Fi; a free public showcase on Vercel.
 
 ### Deferred: could be done later
 PWA / phone app · paid or expressive voices · CI (GitHub Actions running the tests) · Docker
