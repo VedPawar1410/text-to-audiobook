@@ -6,7 +6,7 @@ The AI director (next stage) only has to add meaning, not find the structure.
 
 import re
 
-from app.structure.cleanup import drop_contents, strip_gutenberg
+from app.structure.cleanup import drop_back_matter, drop_contents, strip_gutenberg
 from app.structure.models import ParsedDocument, Section, Stats
 from app.structure.prose import CHAPTER, ROMAN_HEADING, parse_prose
 from app.structure.screenplay import SLUGLINE, TRANSITION, looks_like_screenplay, parse_screenplay
@@ -21,8 +21,8 @@ PART_WORDS = 1500
 
 def normalize(text: str) -> str:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
-    text = text.replace("﻿", "").replace(" ", " ").replace("­", "").replace("\t", "    ")
-    text = re.sub(r"[​-‍⁠]", "", text)  # zero-width characters
+    text = text.replace("\ufeff", "").replace("\xa0", " ").replace("\xad", "").replace("\t", "    ")  # BOM, nbsp, soft hyphen
+    text = re.sub("[\u200b-\u200d\u2060]", "", text)  # zero-width characters
     text = "\n".join(line.rstrip() for line in text.split("\n"))
     return re.sub(r"\n{3,}", "\n\n", text).strip("\n")
 
@@ -54,6 +54,14 @@ def _drop_leading_byline(body: str) -> str:
 APP_PREFIX = re.compile(r"^(?:Microsoft\s+(?:Word|PowerPoint|Excel)|Pages|Google\s+Docs)\s*[-–:]\s*", re.IGNORECASE)
 FILE_EXTENSION = re.compile(r"\.(?:docx?|pdf|txt|md|rtf|odt|pages|epub)$", re.IGNORECASE)
 BYLINE = re.compile(r"^\s*(?:written\s+)?by\s+([^\n]{2,80}?)\s*$", re.IGNORECASE)
+SITE_SUFFIX = re.compile(r"\s+[-–|]\s+Wikipedia$", re.IGNORECASE)
+# Words that show "author" metadata is really page furniture (Wikipedia's "Authority control
+# databases...") or a placeholder (Calibre's "Unknown"), not a person
+AUTHOR_JUNK = re.compile(
+    r"\b(?:authority|control|databases?|wikipedia|wikimedia|contributors|retrieved|isbn|copyright"
+    r"|rights reserved|unknown|anonymous|admin(?:istrator)?)\b",
+    re.IGNORECASE,
+)
 
 
 def clean_title(title: str | None) -> str | None:
@@ -61,10 +69,20 @@ def clean_title(title: str | None) -> str | None:
     if not title:
         return None
     title = title.strip().strip("{}\\").strip()  # "}Avengers..." left over from an .rtf
-    title = FILE_EXTENSION.sub("", APP_PREFIX.sub("", title))
+    title = SITE_SUFFIX.sub("", FILE_EXTENSION.sub("", APP_PREFIX.sub("", title)))
     if " " not in title:
         title = title.replace("_", " ")
     return re.sub(r"\s+", " ", title).strip() or None
+
+
+def clean_author(author: str | None) -> str | None:
+    """Keep a plausible person's name; drop metadata junk. 'By Jane Doe' -> 'Jane Doe'."""
+    author = re.sub(r"^\s*by\s+", "", author or "", flags=re.IGNORECASE).strip(" .,;\n\t")
+    if not author or len(author) > 80 or len(author.split()) > 8:
+        return None
+    if re.search(r"\d|https?:|www\.|@", author) or AUTHOR_JUNK.search(author):
+        return None
+    return author
 
 
 def find_byline(text: str) -> str | None:
@@ -127,7 +145,7 @@ def _stats(text: str, sections: list[Section]) -> Stats:
 def parse_text(text: str, title: str | None = None, author: str | None = None) -> ParsedDocument:
     text = normalize(text)
     text, header_title, header_author = strip_gutenberg(text)  # licence text is never read aloud
-    text = drop_contents(text)
+    text = drop_back_matter(drop_contents(text))
     detected_title, body = _leading_title(text)
     body = _drop_leading_byline(body)
 
@@ -142,7 +160,7 @@ def parse_text(text: str, title: str | None = None, author: str | None = None) -
     _finalize(sections)
     return ParsedDocument(
         title=clean_title(detected_title or header_title or title),
-        author=(author or "").strip() or find_byline(text) or header_author,
+        author=clean_author(author) or find_byline(text) or clean_author(header_author),
         format=doc_format,
         sections=sections,
         stats=_stats(text, sections),

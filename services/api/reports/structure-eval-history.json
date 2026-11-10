@@ -20,5 +20,16 @@
     "words_lost": 0,
     "titles_ok": "5/6",
     "authors_ok": "5/6"
+  },
+  {
+    "label": "Step 3: web cleanup",
+    "date": "2026-11-10",
+    "paragraphs_pct": 83.3,
+    "headings": "36/36",
+    "headings_extra": 4,
+    "junk_spoken": 0,
+    "words_lost": 0,
+    "titles_ok": "5/6",
+    "authors_ok": "6/6"
   }
 ]

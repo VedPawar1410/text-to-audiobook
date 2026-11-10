@@ -3,6 +3,7 @@
 - Project Gutenberg licence blocks (everything outside the START/END markers). The header's
   "Title:" and "Author:" lines are kept as metadata.
 - Contents pages: a "Contents" line with the list after it, or a run of "Title ..... 12" lines.
+- Back matter on web pages: References, Notes, Sources, External links, See also...
 """
 
 import re
@@ -14,6 +15,12 @@ HEADER_FIELD = re.compile(r"^(Title|Author):\s*(.+?)\s*$", re.IGNORECASE | re.MU
 CONTENTS_LINE = re.compile(r"^#*\s*(?:table of )?contents\.?$", re.IGNORECASE)
 TOC_ENTRY = re.compile(r"^.{2,80}?(?:\s{2,}|\s*\.{3,}\s*)\d{1,4}$")  # "The Harbour      3", "Night .... 12"
 MAX_ENTRY_LENGTH = 80
+
+BACK_MATTER = (r"(?:references|notes|footnotes|endnotes|sources|citations|bibliography|works cited"
+               r"|further reading|external links|see also)")  # fmt: skip
+MARKDOWN_BACK_MATTER = re.compile(rf"^(#{{1,6}})\s+{BACK_MATTER}\s*:?\s*#*$", re.IGNORECASE)
+PLAIN_BACK_MATTER = re.compile(rf"^{BACK_MATTER}\s*:?$", re.IGNORECASE)
+MARKDOWN_HEADING = re.compile(r"^(#{1,6})\s")
 
 
 def strip_gutenberg(text: str) -> tuple[str, str | None, str | None]:
@@ -55,3 +62,31 @@ def drop_contents(text: str) -> str:
         run = []
 
     return "\n".join(line for i, line in enumerate(lines) if i not in remove)
+
+
+def drop_back_matter(text: str) -> str:
+    """Reference lists are never part of the story.
+
+    Markdown (what the URL importer produces): a "## References" section is dropped up to the
+    next heading of the same or a higher level. Plain text (a pasted article): a "References"
+    line standing alone in the second half of the text drops everything after it.
+    """
+    lines = text.split("\n")
+    kept: list[str] = []
+    skipping_level: int | None = None
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        heading = MARKDOWN_HEADING.match(stripped)
+        if skipping_level is not None:
+            ends_section = heading and len(heading[1]) <= skipping_level and not MARKDOWN_BACK_MATTER.match(stripped)
+            if not ends_section:
+                continue
+            skipping_level = None
+        if match := MARKDOWN_BACK_MATTER.match(stripped):
+            skipping_level = len(match[1])
+            continue
+        alone = i == 0 or not lines[i - 1].strip()
+        if PLAIN_BACK_MATTER.match(stripped) and alone and i >= len(lines) // 2:
+            break
+        kept.append(line)
+    return "\n".join(kept)

@@ -1,7 +1,7 @@
 """Step 2 of the revive: headings, paragraphs and junk in pasted and plain-text books."""
 
-from app.structure import clean_title, parse_text
-from app.structure.cleanup import drop_contents, strip_gutenberg
+from app.structure import clean_author, clean_title, parse_text
+from app.structure.cleanup import drop_back_matter, drop_contents, strip_gutenberg
 from app.structure.prose import clean_inline
 
 LONG = "The harbour was quiet that night, and nobody on the quay said a word about the ship. " * 2
@@ -83,6 +83,35 @@ def test_a_byline_under_the_title_is_the_author_not_a_chapter():
     doc = parse_text(f"Harbour Tales\n\nby Ana Ruiz\n\n{LONG}")
     assert (doc.title, doc.author) == ("Harbour Tales", "Ana Ruiz")
     assert blocks(doc) == [("paragraph", LONG.strip())]
+
+
+def test_reference_sections_of_a_web_article_are_dropped():
+    article = (
+        f"# Ships\n\n## History\n\n{LONG}\n\n## References\n\n- Doe, J. (2019). Ships. p. 12.\n\n"
+        f"### Notes\n\n- a note\n\n## External links\n\n- Official site\n\n## Legacy\n\n{LONG}"
+    )
+    kept = drop_back_matter(article)
+    assert "Doe, J." not in kept and "Official site" not in kept and "a note" not in kept
+    assert "## History" in kept and "## Legacy" in kept  # a real section after the back matter stays
+    assert [s.title for s in parse_text(article).sections] == ["History", "Legacy"]
+
+
+def test_a_plain_references_line_only_ends_the_text_in_its_second_half():
+    pasted = f"{LONG}\n\n{LONG}\n\nReferences\n\nDoe, J. (2019). Ships."
+    assert drop_back_matter(pasted).strip().endswith("ship.")
+    early = f"References\n\n{LONG}\n\n{LONG}"  # near the start it's more likely a real word
+    assert drop_back_matter(early) == early
+
+
+def test_junk_author_metadata_is_rejected_and_real_names_kept():
+    assert clean_author("Authority control databases National Library Other") is None
+    assert clean_author("Unknown") is None  # Calibre's placeholder
+    assert clean_author("By Jane Doe") == "Jane Doe"
+    assert clean_author("C. M. Kosemen") == "C. M. Kosemen"
+    assert clean_author("Jane Doe and Ravi Rao") == "Jane Doe and Ravi Rao"
+    doc = parse_text(f"by Ana Ruiz\n\n{LONG}", author="Wikipedia contributors")
+    assert doc.author == "Ana Ruiz"  # junk metadata falls back to the byline in the text
+    assert clean_title("Harbour Tales - Wikipedia") == "Harbour Tales"
 
 
 def test_bold_italic_markers_and_rtf_leftovers_are_never_read():

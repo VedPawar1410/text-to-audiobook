@@ -124,7 +124,7 @@ prepares each step, verifies it, hands over the commands and waits.
 |---|---|---|
 | 1 | Structure-eval harness (`services/api/structure_eval/`, `reports/structure-eval.md`) + this log | Done 2026-11-10 |
 | 2 | Text rules: glued headings, Roman numerals, "Scene:" headings, contents pages, Gutenberg licence, bylines, `***` bug, junk characters | Done 2026-11-10 |
-| 3 | Web cleanup: reference sections, junk author metadata | Planned |
+| 3 | Web cleanup: reference sections, junk author metadata | Done 2026-11-10 |
 | 4 | PDF rules: indented paragraphs, running headers on ≥3 pages, contents pages with page numbers | Planned |
 | 5 | EPUB import (no new dependency) | Planned |
 | 6 | Optional AI second opinion (Haiku vs Gemini), kept only if it measurably helps | Planned |
@@ -157,6 +157,24 @@ How the rules work, and why:
 Known risks (accepted): a short Title Case line ending in ":" such as a letter's "Dear Sir:" can
 become a sub-heading; a bare first line ("The Harbour") is taken as the book title. The PDF's
 alternating running headers now appear as fake sub-headings instead of junk until step 4.
+
+**Step 3 (web cleanup):** junk 4 → **0**, extra headings 6 → 4 (the remaining 4 are the PDF's
+running headers, step 4), authors 5/6 → **6/6**. Real Wikipedia article: 1,974 → 1,212 spoken
+words, i.e. the References/Sources/External links (~38%) gone and the four real sections kept.
+- **Back matter** (`drop_back_matter`): in markdown, a References / Notes / Sources /
+  Bibliography / External links / See also / Further reading section is dropped up to the next
+  heading of the same or higher level (so a real section after it survives). In a plain paste, a
+  standalone "References" line drops the rest — but only in the second half of the text, because
+  near the start the word is more likely part of the story.
+- **Author validation** (`clean_author`): page metadata is not trusted blindly. Names with digits,
+  URLs, or words like "authority", "databases", "contributors", "Unknown" (Calibre's placeholder)
+  are rejected, and the byline in the text is used instead. "By Jane Doe" → "Jane Doe".
+- " - Wikipedia" is stripped from page titles.
+- Housekeeping: the invisible characters in `normalize()` are now written as escapes
+  (`​`…), clearing the last ruff warning in `app/structure`.
+
+Known risk (accepted): a novel whose last chapter is literally titled "Notes" or "Sources" on a
+standalone line would lose that chapter in a plain paste.
 
 ### Deferred: could be done later
 PWA / phone app · paid or expressive voices · CI (GitHub Actions running the tests) · Docker
