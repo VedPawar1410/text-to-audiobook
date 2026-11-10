@@ -1,0 +1,13 @@
+[
+  {
+    "label": "Step 1: baseline (parser as of PR 16)",
+    "date": "2026-11-10",
+    "paragraphs_pct": 66.7,
+    "headings": "14/36",
+    "headings_extra": 2,
+    "junk_spoken": 20,
+    "words_lost": 0,
+    "titles_ok": "4/6",
+    "authors_ok": "4/6"
+  }
+]
