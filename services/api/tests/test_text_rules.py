@@ -77,6 +77,12 @@ def test_contents_pages_are_dropped():
     assert drop_contents(numbered).strip() == "It began."
     two_lines = "Score  3\nAway  1\n\nIt began."  # fewer than three page-number lines: not a contents page
     assert drop_contents(two_lines) == two_lines
+    extracted = "The Harbour 3\nA Letter from the Hill 5\nNight Crossing 7\n\nIt began."  # as a PDF leaves it
+    assert drop_contents(extracted).strip() == "It began."
+    timeline = "Born in 1901\nMarried in 1925\nDied in 1960\n\nShe lived by the sea."  # years, not pages
+    assert drop_contents(timeline) == timeline
+    not_rising = "Score 3\nAway 1\nHome 2\n\nIt began."
+    assert drop_contents(not_rising) == not_rising
 
 
 def test_a_byline_under_the_title_is_the_author_not_a_chapter():

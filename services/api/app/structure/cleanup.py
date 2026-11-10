@@ -14,6 +14,10 @@ HEADER_FIELD = re.compile(r"^(Title|Author):\s*(.+?)\s*$", re.IGNORECASE | re.MU
 
 CONTENTS_LINE = re.compile(r"^#*\s*(?:table of )?contents\.?$", re.IGNORECASE)
 TOC_ENTRY = re.compile(r"^.{2,80}?(?:\s{2,}|\s*\.{3,}\s*)\d{1,4}$")  # "The Harbour      3", "Night .... 12"
+# The same with one space ("The Harbour 3", as PDF extraction leaves it): only trusted when the
+# numbers go up, line after line, like page numbers in a contents list. At most 3 digits, so a
+# short timeline ("Born in 1901", "Died in 1960") is never taken for a contents page.
+LOOSE_TOC_ENTRY = re.compile(r"^(?P<title>\D.{1,78}?)\s+\.*\s*(?P<page>\d{1,3})$")
 MAX_ENTRY_LENGTH = 80
 
 BACK_MATTER = (r"(?:references|notes|footnotes|endnotes|sources|citations|bibliography|works cited"
@@ -60,6 +64,18 @@ def drop_contents(text: str) -> str:
         if len(run) >= 3:
             remove.update(run)
         run = []
+
+    # ... or with single spaces, when the page numbers rise: 3, 5, 7, 9
+    run, pages = [], []
+    for i, line in enumerate([*lines, ""]):
+        match = LOOSE_TOC_ENTRY.match(line.strip()) if len(line.strip()) <= MAX_ENTRY_LENGTH else None
+        if match and (not pages or int(match["page"]) > pages[-1]):
+            run.append(i)
+            pages.append(int(match["page"]))
+            continue
+        if len(run) >= 3:
+            remove.update(run)
+        run, pages = ([i], [int(match["page"])]) if match else ([], [])
 
     return "\n".join(line for i, line in enumerate(lines) if i not in remove)
 

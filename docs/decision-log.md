@@ -125,7 +125,7 @@ prepares each step, verifies it, hands over the commands and waits.
 | 1 | Structure-eval harness (`services/api/structure_eval/`, `reports/structure-eval.md`) + this log | Done 2026-11-10 |
 | 2 | Text rules: glued headings, Roman numerals, "Scene:" headings, contents pages, Gutenberg licence, bylines, `***` bug, junk characters | Done 2026-11-10 |
 | 3 | Web cleanup: reference sections, junk author metadata | Done 2026-11-10 |
-| 4 | PDF rules: indented paragraphs, running headers on ≥3 pages, contents pages with page numbers | Planned |
+| 4 | PDF rules: indented paragraphs, running headers on ≥3 pages, contents pages with page numbers | Done 2026-11-10 |
 | 5 | EPUB import (no new dependency) | Planned |
 | 6 | Optional AI second opinion (Haiku vs Gemini), kept only if it measurably helps | Planned |
 | 7 | One-command local setup, phone over Wi-Fi, verified from a fresh clone | Planned |
@@ -175,6 +175,37 @@ words, i.e. the References/Sources/External links (~38%) gone and the four real 
 
 Known risk (accepted): a novel whose last chapter is literally titled "Notes" or "Sources" on a
 standalone line would lose that chapter in a plain paste.
+
+**Step 4 (PDF rules):** harness paragraphs 83.3% → **100%**, extra headings 4 → **0**, titles
+5/6 → **6/6**; every metric now perfect on the six synthetic cases. The real-prose check (60-page
+Holmes PDF, independent truth): paragraphs **0/611 → 610/611**, headings 7/7 with no fakes,
+**0 of 24,889 words lost**; the only "leaks" left are real story text (two newspaper notices
+that quote the story's title) and the one missed paragraph is a "4½" glyph my generator garbles.
+- **Header/footer slots** (`_slot_lines`): if on ≥60% of pages the first (or last) line is short,
+  isn't a sentence, and is set apart by a blank line, that slot is furniture on every page. This
+  catches running headers that change per chapter, which the old "same text on ≥50% of pages"
+  rule can't. Guard: a one-off strong heading ("CHAPTER TWO") in the slot is kept, because
+  chapter-opening pages usually have no running header.
+- **Paragraphs from layout** (`_mark_paragraphs`): if ≥3% of lines are indented, each indented
+  line starts a paragraph; otherwise a line ending a sentence that is shorter than 75% of a full
+  line ends one. Skipped for screenplays, whose indentation means dialogue.
+- **Page joins:** blank lines at page edges are dropped so a paragraph continues across pages;
+  a heading at the top of a page keeps its separating blank line.
+- **Title page over app-made titles:** a metadata title like "Microsoft Word - x.docx" or
+  "my_book_v2" gives way to the first line of the first page (often also the running header,
+  which is why the old rule deleted it from the title page).
+- **Contents with single spaces** ("The Harbour 3", as PDF extraction leaves it): only trusted
+  when ≥3 lines in a row end in *rising* 1–3 digit numbers, so a timeline of years isn't taken.
+
+Decisions and limits recorded:
+- **Rejected:** converting CAPS titles to Title Case. Screenplay titles are conventionally CAPS
+  and existing tests (and export file names) rely on that; the harness now compares titles
+  case-insensitively instead, and titles can be edited inline.
+- **Known limit:** in a PDF with neither indents nor blank lines, a paragraph whose last line is
+  nearly full width can't be told from a line inside a paragraph (a person couldn't either), so
+  only clearly short last lines split paragraphs. Loosening the rule would split real paragraphs.
+- **Known limit:** a chapter opening whose bare-word title ("The Harbour") sits alone in the
+  header slot on a single page is treated as a running header. Scanned PDFs still need OCR.
 
 ### Deferred: could be done later
 PWA / phone app · paid or expressive voices · CI (GitHub Actions running the tests) · Docker

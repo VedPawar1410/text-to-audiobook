@@ -98,7 +98,8 @@ def score_document(case: Case, document: ParsedDocument) -> Score:
         headings_extra=extra,
         junk_spoken=junk,
         words_lost=lost,
-        title_ok=_norm(document.title or "") == _norm(truth.title or ""),
+        # Casing is a display choice (a title page in CAPS stays CAPS), not a structure error
+        title_ok=_norm(document.title or "").lower() == _norm(truth.title or "").lower(),
         author_ok=(document.author or None) == truth.author,
     )
 
