@@ -353,8 +353,10 @@ export function useReadAlong(doc: DocumentDetail, chapters: Chapter[]) {
     if (!chapter || !("mediaSession" in navigator)) return;
     navigator.mediaSession.metadata = new MediaMetadata({
       title: chapter.title ?? doc.title ?? "Untitled",
-      artist: "Narrate",
+      artist: doc.author ?? "Narrate",
       album: doc.title ?? "",
+      // The orb, so the lock screen looks like an audiobook player, not a blank square
+      artwork: [{ src: "/apple-icon", sizes: "180x180", type: "image/png" }],
     });
     const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
       ["play", () => void audioRef.current?.play()],
@@ -378,7 +380,7 @@ export function useReadAlong(doc: DocumentDetail, chapters: Chapter[]) {
         }
       }
     };
-  }, [chapter, doc.title, step]);
+  }, [chapter, doc.title, doc.author, step]);
 
   return {
     ready,

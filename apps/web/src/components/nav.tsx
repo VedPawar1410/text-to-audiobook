@@ -9,7 +9,7 @@ const LINK =
 // backdrop-blur is fine here because the nav is fixed (it never scrolls).
 export function Nav() {
   return (
-    <header className="fixed inset-x-0 top-4 z-30 flex justify-center px-4 md:top-6">
+    <header className="fixed inset-x-0 top-[calc(1rem+env(safe-area-inset-top))] z-30 flex justify-center px-4 md:top-[calc(1.5rem+env(safe-area-inset-top))]">
       <nav className="flex items-center gap-2 rounded-full border border-hairline bg-stage/70 py-1 pr-1 pl-5 backdrop-blur-xl sm:gap-3">
         <Link href="/" className="flex min-h-11 items-center font-display text-lg italic tracking-tight">
           Narrate

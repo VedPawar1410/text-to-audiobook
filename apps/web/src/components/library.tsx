@@ -166,7 +166,7 @@ export function Library() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
             transition={{ type: "spring", stiffness: 420, damping: 34 }}
-            className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-3 md:pb-6"
+            className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
           >
             <div className="flex items-center gap-4 rounded-full border border-hairline bg-stage/85 py-1.5 pr-1.5 pl-6 backdrop-blur-xl">
               <span className="text-sm text-ink-muted">{books(selected.size)}</span>

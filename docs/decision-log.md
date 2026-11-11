@@ -396,3 +396,49 @@ accounts · voice cloning.
 | Structure cleanup by AI, doubtful lines only | 8,217 in / 711 out (Gemini); 6,863 in / 3,460 out incl. 2,990 reasoning (Groq) | revive experiment |
 | Audio size | MP3 at 64 kbps ≈ 29 MB/hour | ffmpeg settings (`-b:a 64k`) |
 | Tests | 155 backend + 15 web passing (2026-11-10, before the revive changes) | pytest, node --test |
+
+---
+
+## 6. PWA for iPhone (started 2026-11-11)
+
+Ved asked whether to build a PWA next and listens mainly on an **iPhone**.
+
+### What the research found (2026-11-11)
+| Topic | Finding | Source |
+|---|---|---|
+| Background audio | Audio in an installed (home-screen, standalone) web app is reported to **stop when the phone locks or the app goes to the background**, lock-screen controls can stop working, and iOS 26 reports describe further audio bugs; the same page in a **Safari tab keeps playing** | WebKit bug 198277, Apple developer forums thread 762582, MacRumors iOS 26 thread |
+| Offline storage | Safari deletes a site's data after 7 days of Safari use without a visit; home-screen web apps are exempt and get a large quota (~60% of disk per MDN) | webkit.org storage policy, MDN |
+| HTTPS for the phone | Install and offline need HTTPS; Tailscale Serve gives a tailnet-only HTTPS address with automatic certificates; Personal plan free (card requirement not confirmed) | tailscale.com/kb/1312/serve, /kb/1242/tailscale-serve, /pricing |
+
+The tension on iPhone: a **Safari tab** keeps background audio but risks losing saved books; an
+**installed app** keeps saved books but risks audio stopping when the phone locks. These are
+reports, not measurements, so the plan measures on Ved's phone before committing to a PWA.
+
+### Plan
+| Phase | What | Status |
+|---|---|---|
+| P1 | `start.sh --tailscale` (HTTPS from anywhere, your devices only) + iPhone polish (safe areas, home-screen icon, lock-screen artwork); deliberately **no** standalone manifest yet | Done 2026-11-11 (Tailscale part waits for Ved's install) |
+| P2 | 15-minute test on Ved's iPhone: Safari tab vs home-screen bookmark vs installed app (locked-screen audio, lock-screen controls, storage) | Planned |
+| P3 | Decide: full PWA with "Save for offline" (if installed apps keep playing) or stay in Safari + M4B export for offline | Planned |
+
+### P1 details
+- **`--tailscale` mode:** the web app binds to 127.0.0.1 only; `tailscale serve --bg --https=443
+  http://127.0.0.1:3000` publishes it to your own devices; the URL is read from `tailscale serve
+  status`; the serve is switched off on exit (`--bg` serves otherwise persist, even across reboots).
+  Safer than `--phone`, which opens Narrate to everyone on the Wi-Fi. The CLI is found on the PATH
+  or inside the Mac app (`/Applications/Tailscale.app/Contents/MacOS/Tailscale`). The CLI syntax
+  comes from Tailscale's docs; it couldn't be run here because Tailscale isn't installed yet, so
+  the first real run is a joint test once Ved installs it.
+- **Safe areas:** `viewport-fit=cover` plus `env(safe-area-inset-*)` padding on the fixed nav, player
+  bar, library selection bar, Ask AI sheet and the "Ask about this" pill.
+- **Home-screen icon:** `app/apple-icon.tsx` draws the orb as an opaque 180×180 PNG at build time
+  (iOS ignores SVG icons); every page links it as `apple-touch-icon`.
+- **Lock screen:** media-session metadata now shows the book's author and the orb as artwork.
+- **Not done on purpose:** no web app manifest with `display: standalone` and no
+  `apple-mobile-web-app-capable`, so a home-screen icon keeps opening in Safari, where background
+  audio works, until P2 says otherwise.
+- **Verified:** typecheck, lint and 15 web tests pass; the production build links the icon and sets
+  `viewport-fit=cover`; the generated icon is a 180×180 PNG; in the iOS Simulator (iPhone 17, iOS
+  27.2, Safari) the nav clears the Dynamic Island and the player bar sits above Safari's floating
+  toolbar (`docs/screenshots/pwa-p1-iphone-safe-areas.jpg`); `start.sh` passes bash 3.2 syntax,
+  prints a clear message when Tailscale is missing, and rejects unknown options.

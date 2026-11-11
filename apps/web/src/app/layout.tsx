@@ -27,8 +27,10 @@ export const metadata: Metadata = {
   description: "Turn any text into an expressive, multi-voice audiobook with read-along.",
 };
 
-// Phone browsers tint their toolbars to match the stage instead of default grey
-export const viewport: Viewport = { themeColor: "#0b0908", colorScheme: "dark" };
+// Phone browsers tint their toolbars to match the stage instead of default grey. viewportFit
+// "cover" lets the stage run under the iPhone's notch and home bar; the fixed nav and player
+// keep clear of them with env(safe-area-inset-*) padding.
+export const viewport: Viewport = { themeColor: "#0b0908", colorScheme: "dark", viewportFit: "cover" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

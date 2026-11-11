@@ -82,7 +82,7 @@ export function PlayerBar({ player, onAsk }: { player: ReadAlong; onAsk: () => v
   const progress = duration ? (Math.min(time, duration) / duration) * 100 : 0;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 px-3 pb-3 md:px-6 md:pb-6">
+    <div className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-6 md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
       <div className="mx-auto flex max-w-4xl flex-col gap-1 rounded-[1.75rem] border border-hairline bg-stage/85 px-3 pt-1 pb-2 backdrop-blur-xl md:px-5 md:pb-3">
         <input
           type="range"

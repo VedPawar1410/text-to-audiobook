@@ -97,7 +97,7 @@ services/api/             FastAPI backend
   tests/                  pytest
 scripts/
   setup.sh                one-time setup (checks tools, .env, database, dependencies)
-  start.sh                run the API + web app; --phone opens it to your Wi-Fi
+  start.sh                run the API + web app; --tailscale (HTTPS, your devices) or --phone (Wi-Fi)
   export_showcase.py      snapshot one recorded book for the showcase
 docs/                     decision log, design system, narration guide, screenshots
   research/               research notebook: every experiment, its data, scripts and raw results
@@ -117,13 +117,19 @@ Then add a free Gemini key ([aistudio.google.com](https://aistudio.google.com)) 
 ./scripts/start.sh
 ```
 
-Open http://localhost:3000. To use it from your phone on the same Wi-Fi:
+Open http://localhost:3000. The first recording downloads the Kokoro voice model (~330 MB).
+
+**On your phone, anywhere (recommended):** install the free [Tailscale](https://tailscale.com/download) app on this computer and on your phone, and sign in to both with the same account. Then:
 
 ```bash
-./scripts/start.sh --phone
+./scripts/start.sh --tailscale
 ```
 
-It prints the address to open (like `http://192.168.1.20:3000`). Narrate has no login, so this lets anyone on that network use it: fine at home, not on public Wi-Fi. The first recording downloads the Kokoro voice model (~330 MB).
+It prints an HTTPS address like `https://your-mac.your-tailnet.ts.net`: open it in Safari on your phone, on Wi-Fi or mobile data. Only devices signed in to your Tailscale account can reach it, the web app itself stays private to this computer, and the address is switched off again when you stop Narrate. The first time, Tailscale may ask you to allow HTTPS certificates for your account (a link in the terminal). The computer has to be on and running Narrate.
+
+**On your phone, home Wi-Fi only:** `./scripts/start.sh --phone` prints an `http://192.168.x.x:3000` address. Narrate has no login, so this lets anyone on that network use it: fine at home, not on public Wi-Fi.
+
+**iPhone notes:** add the page to your Home Screen for a one-tap icon. Keep listening in Safari for now: iOS is reported to pause audio in installed web apps when the phone locks, which is being tested before Narrate becomes an installable app ([decision log](docs/decision-log.md)).
 
 **Optional settings** (`services/api/.env`, all listed in `.env.example`): `GROQ_API_KEY` for the fallback director, `STRUCTURE_AI=gemini` or `claude` (+ `ANTHROPIC_API_KEY`) for the AI second opinion at import.
 
@@ -213,7 +219,7 @@ I built Narrate in two layers: a fast feature build, then a revive that measured
 
 ## Future improvements
 
-- A phone app (PWA): home-screen install, offline books, lock-screen controls everywhere.
+- A phone app (PWA) with offline books: in progress, gated on an iPhone test of locked-screen audio (decision log, "PWA").
 - Expressive voices (OpenAI gpt-4o-mini-tts or ElevenLabs) through the existing one-file engine interface.
 - OCR for scanned PDFs; an "Export as EPUB" option.
 - CI running the tests and the structure evaluation on every push.

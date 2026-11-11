@@ -32,6 +32,7 @@ Build-session numbers (Oct 28 – Nov 1, 2026) are marked as such and come from 
 | E6 | Where can it be hosted for $0 with no card? | Web research, Nov 2026 | Nowhere for the voice engine → run locally + static showcase | [8](#8-e6-hosting-and-model-pricing-research) |
 | E7 | Does the optional AI second opinion help? | Harness + hard case + real input, 2 models, 3 repeats | Yes on messy X threads only; never called on normal books | [10](#10-step-by-step-measurements) |
 | E8 | Does it install for a stranger? | Fresh clone, throwaway database, bash 3.2 | After 4 fixes, yes (33 s setup) | [10](#10-step-by-step-measurements) |
+| E9 | Is a PWA worth it on an iPhone? | Web research + iOS Simulator layout check; device test pending | Not yet: installed web apps may stop audio on lock; HTTPS via Tailscale first | [13](#13-e9-pwa-on-iphone-2026-11-11) |
 
 ---
 
@@ -342,3 +343,26 @@ PYTHONPATH=. uv run --no-sync python ../../docs/research/experiments/heldout.py 
 - Exact numbers can differ slightly from re-runs: LLM answers vary, and the scripts import the
   *current* parser.
 - The committed harness needs no downloads: `uv run --no-sync python -m structure_eval`.
+
+## 13. E9: PWA on iPhone (2026-11-11)
+
+**Question.** Should Narrate become an installable web app (PWA) for Ved's iPhone?
+
+**Research** (web search; full table and sources in the [decision log §6](../decision-log.md)):
+- **Background audio:** installed iOS web apps are reported to stop audio on lock or backgrounding,
+  with flaky lock-screen controls (WebKit bug 198277, Apple forums 762582, iOS 26 reports). A
+  Safari tab keeps playing.
+- **Offline storage:** Safari evicts a site's data after 7 days of Safari use without a visit;
+  home-screen apps are exempt (~60% of disk quota per MDN).
+- **HTTPS:** Tailscale Serve provides it with automatic certificates, reachable from the tailnet only.
+
+**P1 measurements:**
+- **Production build:** `<link rel="apple-touch-icon" href="/apple-icon?…" sizes="180x180">` on
+  every page, and `<meta name="viewport" content="…, viewport-fit=cover">`.
+- **Generated icon:** a PNG, 180 × 180, RGBA (the orb on `#0b0908`).
+- **iOS Simulator** (iPhone 17 created for this, iOS 27.2 runtime, Safari): the nav clears the
+  Dynamic Island; the player bar sits above Safari's floating toolbar.
+- **`start.sh`:** bash 3.2 syntax OK; `--tailscale` without Tailscale prints "Tailscale isn't
+  installed…" and exits 1; an unknown option prints the usage line and exits 1.
+- **Not yet measured:** the real Tailscale run (Tailscale isn't installed yet) and anything about
+  locked-screen audio. That needs Ved's physical iPhone (P2); the simulator can't answer it.

@@ -26,7 +26,7 @@ export function AskPanel({ documentId, context, onClose }: { documentId: string;
           animate={{ opacity: 1, y: 0 }}
           exit={reduce ? undefined : { opacity: 0, y: 24 }}
           transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
-          className="fixed inset-x-0 bottom-0 z-40 flex max-h-[80dvh] flex-col rounded-t-[1.75rem] border border-hairline bg-stage-raised/95 backdrop-blur-xl md:inset-x-auto md:top-24 md:right-6 md:bottom-40 md:max-h-none md:w-[26rem] md:rounded-[1.75rem]"
+          className="fixed inset-x-0 bottom-0 z-40 flex max-h-[80dvh] flex-col rounded-t-[1.75rem] border border-hairline bg-stage-raised/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:inset-x-auto md:pb-0 md:top-24 md:right-6 md:bottom-40 md:max-h-none md:w-[26rem] md:rounded-[1.75rem]"
         >
           <Conversation documentId={documentId} context={context} onClose={onClose} />
         </motion.aside>
