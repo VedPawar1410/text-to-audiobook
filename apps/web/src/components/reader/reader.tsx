@@ -12,6 +12,7 @@ import { useReadAlong } from "@/lib/use-read-along";
 import { AskPanel, type AskContext } from "./ask-panel";
 import { PlayerBar } from "./player-bar";
 import { ReaderText } from "./reader-text";
+import { SaveOffline } from "./save-offline";
 
 export function Reader({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -135,6 +136,7 @@ function ReadAlongView({ document, chapters }: { document: DocumentDetail; chapt
         <Link href={`/documents/${document.id}`} className={`${SECONDARY} mt-3 -ml-5`}>
           ← Director&apos;s notes
         </Link>
+        <SaveOffline documentId={document.id} chapters={chapters} />
       </header>
 
       <ReaderText document={document} playable={playable} names={names} highlightStyle={style} onSeek={onSeek} />

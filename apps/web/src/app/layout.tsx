@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { Nav } from "@/components/nav";
+import { ServiceWorker } from "@/components/service-worker";
 import "./globals.css";
 
 // Display serif for headlines: theatrical, with optical sizing and a soft axis.
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           aria-hidden
           className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_80%_60%_at_70%_-10%,rgb(255_181_71/0.09),transparent_60%)]"
         />
+        <ServiceWorker />
         <Nav />
         <div className="relative flex flex-1 flex-col">{children}</div>
       </body>

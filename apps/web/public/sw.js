@@ -1,10 +1,8 @@
-// Offline audio test (P3.2 of the PWA plan). Registered only from /lab/offline-test.
+// Serves saved books (lib/offline.ts). Registered for the whole app by components/service-worker.tsx.
 //
 // Two jobs: answer audio requests from the cache, including the byte-range requests iPhones
 // make for media, and fall back to the cache when the network fails. Everything else passes
 // straight through, so this can't change how the app behaves online.
-const CACHE = "narrate-offline-test";
-
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 
@@ -42,7 +40,7 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
   event.respondWith(
     (async () => {
-      const cached = await (await caches.open(CACHE)).match(request.url);
+      const cached = await caches.match(request.url); // across saved books and the lab test
       if (cached && url.pathname.endsWith("/audio")) return audioResponse(request, cached);
       try {
         return await fetch(request);

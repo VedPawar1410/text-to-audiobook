@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bezel } from "@/components/bezel";
 import { PillButton, PillLink, SECONDARY } from "@/components/pill-link";
+import { SaveOffline } from "@/components/reader/save-offline";
 import { ErrorNote, LABEL } from "@/components/ui";
 import { api, chapterAudioUrl, exportUrl, isRendering, type Chapter, type DocumentDetail, type ExportFormat } from "@/lib/api";
 import { useRender } from "@/lib/hooks";
@@ -158,7 +159,10 @@ export function RenderPanel({ document, revision }: { document: DocumentDetail; 
           )}
 
           {!rendering && chapters.length > 0 && ready.length === chapters.length && (
-            <Downloads documentId={document.id} seconds={total} stale={stale} />
+            <div>
+              <Downloads documentId={document.id} seconds={total} stale={stale} />
+              <SaveOffline documentId={document.id} chapters={chapters} />
+            </div>
           )}
 
           {job?.status === "failed" && job.error && <ErrorNote>{job.error}</ErrorNote>}

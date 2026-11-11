@@ -422,3 +422,16 @@ a service worker at all, so the simulator was used instead. A real iPhone in air
 
 iOS probes with a 2-byte range, then asks for the whole file; both are answered from the cache. Ved also heard
 both play.
+
+**P3.3 "Save for offline", real iPhone, airplane mode** (installed app; two-chapter test book; saved from the app,
+reader opened before going offline). These are Ved's observations, not timed measurements:
+
+| Check | Result |
+|---|---|
+| Plays with word highlighting | Yes |
+| Moves to Chapter Two by itself | Yes |
+| Progress bar | Works |
+| Tapping a word jumps there | Works |
+| Remove puts the button back to "Save for offline" | Yes |
+
+Not covered by this run: opening the app from scratch offline (P3.4), a full-length book, the lock screen while offline.

@@ -484,3 +484,18 @@ and linked on every page, `mobile-web-app-capable` and the Apple title and statu
 **Chosen: the service worker with cached files**, because the reader keeps asking for the same URLs and
 needs almost no changes. **Rejected (kept as a known fallback):** audio from memory via blob URLs, which
 also worked but would need reader changes and holds a whole file in memory.
+
+**P3.1 confirmed on the iPhone:** the re-installed icon is named Narrate and opens on the Library.
+
+**P3.3 done (2026-11-11):** a "Save for offline" button, on the book page under "Take it with you" and in the
+reader. It was first only in the reader, and Ved couldn't find it from the book page, which is where downloads
+already live, so it went in both places. `lib/offline.ts` saves a book's data,
+manifests and audio to Cache Storage, all or nothing; the state is checked against what's really stored, so
+a cleared or re-recorded book says so instead of failing silently. It asks for persistent storage on a best-effort
+basis. The service worker is now registered app-wide; it's network-first and only answers from the cache for
+saved audio or when the network fails. The temporary Lab link is gone; `/lab/offline-test` stays reachable by URL.
+
+Confirmed on Ved's iPhone in airplane mode with a two-chapter test book: playback with word highlighting, automatic
+move to Chapter Two, the progress bar, tapping a word, and Remove putting the button back. **Not yet covered:**
+opening the app from scratch with no connection (that's P3.4; the test kept the reader open before going offline),
+a full-length book, and the lock screen while offline.
