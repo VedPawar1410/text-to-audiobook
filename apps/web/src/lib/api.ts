@@ -128,10 +128,22 @@ export class ApiError extends Error {
   }
 }
 
+const UNREACHABLE_MESSAGE =
+  "Can't reach Narrate right now. Saved books still play, but this needs the computer running Narrate to be on and connected.";
+
+/** A fetch whose network failure explains itself (browsers only say "Load failed"). */
+async function reach(url: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch {
+    throw new ApiError(UNREACHABLE_MESSAGE, 0);
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // The showcase has no backend: reads come from a snapshot, writes explain themselves
   if (DEMO && init?.method && init.method !== "GET") throw new ApiError(DEMO_MESSAGE, 405);
-  const response = await fetch(`/api${path}`, init);
+  const response = await reach(`/api${path}`, init);
   if (!response.ok) {
     let message = `Something went wrong (${response.status}).`;
     try {
@@ -159,7 +171,7 @@ export type AskRequest = { question: string; selection: string | null; segment_i
 /** Yields the answer as it's written (the API streams plain text). */
 export async function* askStream(documentId: string, body: AskRequest): AsyncGenerator<string> {
   if (DEMO) throw new ApiError(DEMO_MESSAGE, 405); // answering needs the local API and an LLM key
-  const response = await fetch(`/api/documents/${documentId}/ask`, json("POST", body));
+  const response = await reach(`/api/documents/${documentId}/ask`, json("POST", body));
   if (!response.ok || !response.body) {
     let message = "Couldn't ask right now.";
     try {
@@ -211,7 +223,7 @@ export const api = {
   voices: () => request<Voice[]>("/tts/voices"),
   previewVoice: async (text: string, voice: string, speed: number) => {
     if (DEMO) throw new ApiError(DEMO_MESSAGE, 405); // previews are recorded live by the local voice engine
-    const response = await fetch("/api/tts/preview", json("POST", { text, voice, speed }));
+    const response = await reach("/api/tts/preview", json("POST", { text, voice, speed }));
     if (!response.ok) throw new ApiError("Couldn't play this voice.", response.status);
     return response.blob();
   },

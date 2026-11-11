@@ -499,3 +499,22 @@ Confirmed on Ved's iPhone in airplane mode with a two-chapter test book: playbac
 move to Chapter Two, the progress bar, tapping a word, and Remove putting the button back. **Not yet covered:**
 opening the app from scratch with no connection (that's P3.4; the test kept the reader open before going offline),
 a full-length book, and the lock screen while offline.
+
+**P3.4 done (2026-11-11, confirmed on Ved's iPhone; results in `docs/research/README.md`):** the app opens with no connection. **Chosen:** extend the hand-written service worker,
+and have "Save for offline" also store the Library page, the book's reader page and the code, styles and fonts
+those pages list. Nothing is cached unless a book is saved, so a phone with no saved books behaves as before.
+**Rejected:** Next's `experimental.useOffline` (retries failed requests, can't launch a page with no server);
+Serwist (a new dependency and a build step to precache a small app); caching every page visited (more moving
+parts, and it would store pages that dead-end offline).
+
+Details worth keeping: the worker waits at most 4 s for the network when it has a copy, then uses saved copies for
+30 s without asking, because a sleeping Mac can leave requests hanging instead of failing. The Library falls back to
+saved books on failure or after 4 s, and the real list replaces them if it arrives late. Offline, cards go straight
+to the reader as full page loads, Select and Delete are hidden, and pages never saved redirect to the Library.
+Network failures now explain themselves in `api.ts` instead of "Load failed". Deleting a book removes its saved copy.
+
+**Known limits:** imports and other writes have no timeout (they can be legitimately slow), so with a sleeping Mac
+they wait until the browser gives up before explaining. Offline, the app is the version from the last save.
+Old builds' code stays in the cache (the whole build is 1.8 MB) because older saved pages still need it. Books
+saved before this change show as out of date and need saving again. A Mac that is really asleep with Tailscale on
+was only simulated (a frozen server); on the iPhone, Narrate was stopped on an awake Mac, which fails fast.

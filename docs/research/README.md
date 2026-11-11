@@ -435,3 +435,32 @@ reader opened before going offline). These are Ved's observations, not timed mea
 | Remove puts the button back to "Save for offline" | Yes |
 
 Not covered by this run: opening the app from scratch offline (P3.4), a full-length book, the lock screen while offline.
+
+**P3.4 offline launch, simulator run** (iPhone 17 simulator, iOS 27.2, real WebKit, Safari killed before each launch;
+production build on a separate port; two-chapter test book):
+
+| Scenario | Result |
+|---|---|
+| Online, after saving | Library shows all 3 books; the saved one is marked "On this phone" |
+| Server stopped (connection refused), cold launch | Library opens, correct fonts, only the saved book, explanation shown |
+| Tap the book, then Play | Reader opens; audio ran to 0:17 with word highlighting |
+| Tap "New" (a page never saved) | Lands on the Library |
+| Server frozen with SIGSTOP (accepts connections, never answers: stands in for a sleeping Mac), cold launch | Saved Library appeared, seen between 14 and 21 s after launch, including the simulator's slow Safari start (not timed precisely) |
+| Server unfrozen with the page still open | The full 3-book list replaced the saved one by itself |
+
+Saved app code is whatever the pages' HTML lists (17 files for the Library); the whole build is 1.8 MB.
+
+**P3.4 on the real iPhone** (installed app, two-chapter test book). Ved's observations, not timed measurements:
+
+| Check | Result |
+|---|---|
+| Library marks the saved book "On this phone" | Yes |
+| Airplane mode, app swiped away, opened from the icon | Library appears with the saved book |
+| Play | Word highlighting; moves to Chapter Two by itself |
+| Lock the phone while playing offline | Keeps playing; lock-screen skip and scrub work |
+| Ask, offline | Shows the "Can't reach Narrate" message |
+| Network on, Narrate stopped on the Mac (Ctrl-C), app reopened | Saved Library appears in "a fraction of a second" |
+| Narrate restarted, app reopened | All books back |
+
+The stopped-server case was fast because an awake Mac refuses the connection at once. A Mac really asleep with
+Tailscale on wasn't tried on the phone, only simulated above. A full-length book offline is also still untested.

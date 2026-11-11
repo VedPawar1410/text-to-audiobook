@@ -9,6 +9,7 @@ import { PillLink, SECONDARY } from "@/components/pill-link";
 import { ErrorNote, Skeleton } from "@/components/ui";
 import { api, type DocumentSummary, type Status } from "@/lib/api";
 import { DEMO } from "@/lib/demo";
+import { removeBook, savedBookIds, savedBooks } from "@/lib/offline";
 import { formatDuration, genreLabel } from "@/lib/vocabulary";
 
 const STATUS: Record<Status, { label: string; dot: string }> = {
@@ -19,6 +20,7 @@ const STATUS: Record<Status, { label: string; dot: string }> = {
 };
 
 const SHOWN_IN_DIALOG = 5;
+const SLOW_MS = 4000;
 
 function titleOf(document: DocumentSummary) {
   return document.title ?? "Untitled";
@@ -35,9 +37,36 @@ export function Library() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<DocumentSummary[] | null>(null); // awaiting confirmation
   const [deleting, setDeleting] = useState(false);
+  const [offline, setOffline] = useState(false);
+  const [saved, setSaved] = useState<Set<string>>(new Set()); // saved for offline on this phone
 
+  // Can't reach the server? Show what's saved on this phone. A sleeping Mac never answers at
+  // all, so a slow reply counts too; if the real list arrives after all, it replaces this.
   useEffect(() => {
-    api.listDocuments().then(setDocuments).catch((e: Error) => setError(e.message));
+    let answered = false;
+    const showSaved = async () => {
+      const books = await savedBooks();
+      if (answered || books.length === 0) return false;
+      setOffline(true);
+      setSaved(new Set(books.map((d) => d.id)));
+      setDocuments(books);
+      return true;
+    };
+    const timer = setTimeout(() => void showSaved(), SLOW_MS);
+    api
+      .listDocuments()
+      .then((list) => {
+        answered = true;
+        clearTimeout(timer);
+        setOffline(false);
+        setSaved(new Set(savedBookIds()));
+        setDocuments(list);
+      })
+      .catch(async (e: Error) => {
+        clearTimeout(timer);
+        if (!(await showSaved())) setError(e.message);
+      });
+    return () => clearTimeout(timer);
   }, []);
 
   // Escape leaves select mode (while the dialog is open, Escape closes only the dialog)
@@ -73,6 +102,7 @@ export function Library() {
     const results = await Promise.allSettled(pending.map((d) => api.remove(d.id)));
     const deleted = new Set(pending.filter((_, i) => results[i].status === "fulfilled").map((d) => d.id));
     const failed = pending.filter((d) => !deleted.has(d.id));
+    await Promise.all([...deleted].filter((id) => saved.has(id)).map(removeBook)); // no ghost copies
 
     setDocuments((all) => all?.filter((d) => !deleted.has(d.id)) ?? null);
     setSelected((current) => new Set([...current].filter((id) => !deleted.has(id))));
@@ -134,7 +164,8 @@ export function Library() {
               </button>
             </>
           ) : (
-            !DEMO && (
+            !DEMO &&
+            !offline && (
               <button type="button" onClick={() => setSelecting(true)} className={SECONDARY}>
                 Select
               </button>
@@ -145,11 +176,20 @@ export function Library() {
 
       {error && <ErrorNote>{error}</ErrorNote>}
 
+      {offline && (
+        <p className="rounded-2xl border border-hairline px-4 py-3 text-sm text-ink-muted">
+          Can&apos;t reach Narrate, so these are the books saved on this phone. Importing, directing and recording need the
+          computer running Narrate.
+        </p>
+      )}
+
       <ul className={`grid gap-6 md:grid-cols-2 ${selecting ? "pb-24" : ""}`}>
         {documents.map((document) => (
           <li key={document.id}>
             <BookCard
               document={document}
+              offline={offline}
+              saved={saved.has(document.id)}
               selecting={selecting}
               selected={selected.has(document.id)}
               onToggle={() => toggle(document.id)}
@@ -209,13 +249,15 @@ export function Library() {
 
 type BookCardProps = {
   document: DocumentSummary;
+  offline: boolean;
+  saved: boolean;
   selecting: boolean;
   selected: boolean;
   onToggle: () => void;
   onDelete: () => void;
 };
 
-function BookCard({ document, selecting, selected, onToggle, onDelete }: BookCardProps) {
+function BookCard({ document, offline, saved, selecting, selected, onToggle, onDelete }: BookCardProps) {
   const status = STATUS[document.status];
   const title = titleOf(document);
   const pickId = `pick-${document.id}`;
@@ -240,6 +282,11 @@ function BookCard({ document, selecting, selected, onToggle, onDelete }: BookCar
                 <label htmlFor={pickId} className={`cursor-pointer ${stretch}`}>
                   {title}
                 </label>
+              ) : offline ? (
+                // Straight to the reader, as a full page load the service worker can answer
+                <a href={`/documents/${document.id}/listen`} className={stretch}>
+                  {title}
+                </a>
               ) : (
                 <Link href={`/documents/${document.id}`} className={stretch}>
                   {title}
@@ -269,7 +316,7 @@ function BookCard({ document, selecting, selected, onToggle, onDelete }: BookCar
                 <path d="M3.5 8.5 6.5 11.5 12.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </span>
-          ) : DEMO ? null : (
+          ) : DEMO || offline ? null : (
             <button
               type="button"
               onClick={onDelete}
@@ -286,6 +333,7 @@ function BookCard({ document, selecting, selected, onToggle, onDelete }: BookCar
           <span className="flex items-center gap-2">
             <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
             {status.label}
+            {saved && <span className="text-tungsten">· On this phone</span>}
           </span>
           <span className="font-mono text-xs">
             {formatDuration(document.stats.estimated_minutes)} · {document.stats.words.toLocaleString()} words

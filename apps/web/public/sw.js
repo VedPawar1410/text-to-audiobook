@@ -1,8 +1,12 @@
 // Serves saved books (lib/offline.ts). Registered for the whole app by components/service-worker.tsx.
 //
-// Two jobs: answer audio requests from the cache, including the byte-range requests iPhones
-// make for media, and fall back to the cache when the network fails. Everything else passes
-// straight through, so this can't change how the app behaves online.
+// Answers saved audio from the cache, including the byte-range requests iPhones make for media,
+// and falls back to saved copies when the server can't be reached. Anything never saved passes
+// straight through, so a phone with no saved books behaves exactly as if this weren't here.
+const WAIT_MS = 4000; // a sleeping Mac can leave a request hanging for a minute, so don't wait for it
+const RETRY_AFTER_MS = 30000; // once it hasn't answered, use saved copies for a while without asking
+let unreachableUntil = 0;
+
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 
@@ -34,6 +38,19 @@ async function audioResponse(request, cached) {
   });
 }
 
+/** The network if it answers in time, otherwise the fallback. */
+async function networkOr(request, fallback) {
+  if (!fallback) return fetch(request);
+  if (Date.now() < unreachableUntil) return fallback;
+  try {
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), WAIT_MS));
+    return await Promise.race([fetch(request), timeout]);
+  } catch {
+    unreachableUntil = Date.now() + RETRY_AFTER_MS;
+    return fallback;
+  }
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -42,12 +59,12 @@ self.addEventListener("fetch", (event) => {
     (async () => {
       const cached = await caches.match(request.url); // across saved books and the lab test
       if (cached && url.pathname.endsWith("/audio")) return audioResponse(request, cached);
-      try {
-        return await fetch(request);
-      } catch (error) {
-        if (cached) return cached;
-        throw error;
-      }
+      if (cached && url.pathname.startsWith("/_next/static/")) return cached; // hashed names never change
+      if (cached) return networkOr(request, cached);
+      // A page that was never saved: with no connection, go to the Library instead of an error
+      const library = new URL("/documents", url).href;
+      const isPage = request.mode === "navigate" && !url.pathname.startsWith("/api/");
+      return networkOr(request, isPage && (await caches.match(library)) ? Response.redirect(library, 302) : undefined);
     })(),
   );
 });
