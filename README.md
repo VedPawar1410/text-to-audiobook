@@ -129,7 +129,7 @@ It prints an HTTPS address like `https://your-mac.your-tailnet.ts.net`: open it 
 
 **On your phone, home Wi-Fi only:** `./scripts/start.sh --phone` prints an `http://192.168.x.x:3000` address. Narrate has no login, so this lets anyone on that network use it: fine at home, not on public Wi-Fi.
 
-**iPhone notes:** add the page to your Home Screen for a one-tap icon. Keep listening in Safari for now: iOS is reported to pause audio in installed web apps when the phone locks, which is being tested before Narrate becomes an installable app ([decision log](docs/decision-log.md)).
+**Install it on an iPhone:** in Safari tap Share → Add to Home Screen. Narrate then opens full-screen from its own icon. Measured on an iPhone with iOS 27.0.1: it keeps playing while locked, moves to the next chapter by itself, and the lock screen has 15-second skips and a progress bar ([research notebook, E9](docs/research/README.md)).
 
 **Optional settings** (`services/api/.env`, all listed in `.env.example`): `GROQ_API_KEY` for the fallback director, `STRUCTURE_AI=gemini` or `claude` (+ `ANTHROPIC_API_KEY`) for the AI second opinion at import.
 
@@ -219,7 +219,7 @@ I built Narrate in two layers: a fast feature build, then a revive that measured
 
 ## Future improvements
 
-- A phone app (PWA) with offline books: in progress, gated on an iPhone test of locked-screen audio (decision log, "PWA").
+- Offline books in the installed app: in progress (decision log §6).
 - Expressive voices (OpenAI gpt-4o-mini-tts or ElevenLabs) through the existing one-file engine interface.
 - OCR for scanned PDFs; an "Export as EPUB" option.
 - CI running the tests and the structure evaluation on every push.

@@ -25,6 +25,8 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 export const metadata: Metadata = {
   title: "Narrate: every text, performed",
   description: "Turn any text into an expressive, multi-voice audiobook with read-along.",
+  // Installed on an iPhone: the app's name under the icon, and the stage running under the status bar
+  appleWebApp: { title: "Narrate", statusBarStyle: "black-translucent" },
 };
 
 // Phone browsers tint their toolbars to match the stage instead of default grey. viewportFit

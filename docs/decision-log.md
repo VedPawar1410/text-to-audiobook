@@ -470,3 +470,12 @@ minutes kept playing; the lock-screen 15-second skips and the draggable progress
 **Decision:** the feared iOS limit didn't appear on this phone and version, so installing doesn't cost
 background audio. Build the installable app and offline books (P3). Caveat: tested on one iPhone on
 iOS 27.0.1; older iOS versions may behave as the older reports describe.
+
+### P3 plan (approved 2026-11-11)
+1. Proper install: web app manifest. 2. Offline audio test in airplane mode (service worker with cached
+files first; audio from the browser's database as the fallback). 3. "Save for offline" per book. 4. The
+offline experience. 5. Docs. Listening only: importing and recording still need the Mac.
+
+**P3.1 done:** `app/manifest.ts` (name, icons, `display: standalone`, opens on the Library) and
+`appleWebApp` metadata (title, translucent status bar). Verified in a production build: manifest served
+and linked on every page, `mobile-web-app-capable` and the Apple title and status-bar tags present.
