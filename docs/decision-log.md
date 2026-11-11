@@ -417,9 +417,9 @@ reports, not measurements, so the plan measures on Ved's phone before committing
 ### Plan
 | Phase | What | Status |
 |---|---|---|
-| P1 | `start.sh --tailscale` (HTTPS from anywhere, your devices only) + iPhone polish (safe areas, home-screen icon, lock-screen artwork); deliberately **no** standalone manifest yet | Done 2026-11-11 (Tailscale part waits for Ved's install) |
-| P2 | 15-minute test on Ved's iPhone: Safari tab vs home-screen bookmark vs installed app (locked-screen audio, lock-screen controls, storage) | Planned |
-| P3 | Decide: full PWA with "Save for offline" (if installed apps keep playing) or stay in Safari + M4B export for offline | Planned |
+| P1 | `start.sh --tailscale` (HTTPS from anywhere, your devices only) + iPhone polish (safe areas, home-screen icon, lock-screen artwork); deliberately **no** standalone manifest yet | Done 2026-11-11; Tailscale verified on Ved's iPhone (Wi-Fi and mobile data) |
+| P2 | Test on Ved's iPhone with a measuring page (`/lab/lock-test`): Safari tab vs home-screen app, seconds of audio played while locked, lock-screen controls, storage quota | Done 2026-11-11: installed mode works |
+| P3 | Decided: build the installable app with "Save for offline" (installed mode passed the phone test) | Awaiting plan approval |
 
 ### P1 details
 - **`--tailscale` mode:** the web app binds to 127.0.0.1 only; `tailscale serve --bg --https=443
@@ -442,3 +442,31 @@ reports, not measurements, so the plan measures on Ved's phone before committing
   27.2, Safari) the nav clears the Dynamic Island and the player bar sits above Safari's floating
   toolbar (`docs/screenshots/pwa-p1-iphone-safe-areas.jpg`); `start.sh` passes bash 3.2 syntax,
   prints a clear message when Tailscale is missing, and rejects unknown options.
+
+**P1 verified (2026-11-11):** Ved installed Tailscale on his Mac and iPhone (free Personal plan).
+The first `./scripts/start.sh --tailscale` printed "Serve is not enabled on your tailnet" with a
+consent link, waited while he approved it, then served `https://<mac-name>.<tailnet>.ts.net`
+(tailnet only) and printed it. Narrate loaded on the iPhone over Wi-Fi **and mobile data**.
+`tailscale serve status` confirmed "tailnet only" with a proxy to `http://127.0.0.1:3000`, and the
+web server listened on 127.0.0.1. (The machine's real tailnet address isn't recorded here: it's a
+private identifier.)
+
+**P2 tool:** `/lab/lock-test`, a hidden page that reports how the page is running (Safari tab or
+installed web app), the storage quota and whether it's persisted, and, per lock, the seconds locked
+vs the seconds of audio played (and any lock-screen control taps), with "Copy results" as JSON.
+
+**P2 round 1 (2026-11-11):** on Ved's iPhone (iOS 27.0.1), audio kept playing while locked in both a
+Safari tab and an installed web app, with working lock-screen play/pause and artwork, and a 41.2 GB
+storage quota in both. That contradicts the older reports, but the installed run lasted only 19 s, so
+a longer lock and a chapter change while locked are being tested before P3 is decided.
+**Lock-screen controls changed** after Ved found he couldn't skip or scrub: ±15 s skips and a working
+progress bar replace the previous/next track buttons, which jumped by sentence (useless when you
+can't see the text). Trade-off: headphone next/previous no longer jump sentences; the arrow keys
+in the reader still do.
+
+**P2 round 2, final (2026-11-11):** in the **installed** web app on Ved's iPhone, with the real reader:
+the book carried on from Chapter One into Chapter Two by itself while locked; a lock of at least 5
+minutes kept playing; the lock-screen 15-second skips and the draggable progress bar work.
+**Decision:** the feared iOS limit didn't appear on this phone and version, so installing doesn't cost
+background audio. Build the installable app and offline books (P3). Caveat: tested on one iPhone on
+iOS 27.0.1; older iOS versions may behave as the older reports describe.

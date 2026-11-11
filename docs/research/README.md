@@ -366,3 +366,37 @@ PYTHONPATH=. uv run --no-sync python ../../docs/research/experiments/heldout.py 
   installed…" and exits 1; an unknown option prints the usage line and exits 1.
 - **Not yet measured:** the real Tailscale run (Tailscale isn't installed yet) and anything about
   locked-screen audio. That needs Ved's physical iPhone (P2); the simulator can't answer it.
+- **Tailscale run (after Ved installed it):** the first run printed a consent link to enable Serve,
+  then served the tailnet-only HTTPS address; the page loaded on the iPhone on Wi-Fi and on mobile
+  data; `tailscale serve status` showed the proxy to `http://127.0.0.1:3000` as "tailnet only".
+- **P2 instrument:** `apps/web/src/app/lab/lock-test` measures seconds locked vs seconds of audio
+  played per lock, plus display mode and storage quota; results go in this section when Ved runs it.
+
+**P2 results, round 1** (Ved's iPhone, iOS 27.0.1 by Safari version; 2026-11-11, on the `/lab/lock-test` page):
+
+| Running as | Locked | Audio played | Still playing on return | Lock-screen taps | Reading |
+|---|---|---|---|---|---|
+| Safari tab | 20 s | 17 s | yes | pause, play | Played throughout; the ~3 s gap is the pause/play |
+| Safari tab | 85 s | 25 s | no | pause | Stopped because Ved paused it from the lock screen, not by iOS |
+| Installed web app | 19 s | 17 s | yes | pause, play | Played while locked, **contrary to the reports** in the research above |
+
+Both modes: storage quota **41.2 GB**, persisted `false`, Media Session available. The lock screen showed
+the orb artwork and working play/pause in both. Skip and scrubbing were unavailable, as expected on the
+test page (it registers only play and pause); the real reader had no scrubbing or time skips either, so
+it now registers `seekbackward`, `seekforward` (15 s) and `seekto` instead of sentence-jump track buttons.
+
+**Limits of round 1:** the installed-app result is a single 19-second run. Still to measure: a lock of
+several minutes, and moving to the next chapter while locked.
+
+**P2 results, round 2** (same iPhone, **installed web app**, the real reader, reported by Ved):
+
+| Test | Result |
+|---|---|
+| Next chapter while locked (*Lock Test Two Chapters*, 32 s + 33 s) | Carried on into Chapter Two by itself |
+| Lock of at least 5 minutes, untouched (*The Gift of the Magi*) | Kept playing |
+| Lock-screen 15-second skips | Work |
+| Lock-screen progress bar | Drags and seeks |
+
+**Conclusion of E9:** on this iPhone (iOS 27.0.1), an installed web app keeps audio playing while locked,
+contrary to the older reports (2020 to iOS 26). One device and one iOS version; the measurement is what
+decided P3, not the reports.

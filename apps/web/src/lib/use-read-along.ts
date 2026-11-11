@@ -6,6 +6,7 @@ import { buildCues, position, type Cue, type Manifest } from "./timing";
 
 export const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
 const SPEED_KEY = "narrate:speed";
+const SKIP_SECONDS = 15; // the lock screen's back and forward buttons
 
 // localStorage is a per-reader convenience (resume point, speed): never essential
 function read<T>(key: string): T | null {
@@ -358,11 +359,18 @@ export function useReadAlong(doc: DocumentDetail, chapters: Chapter[]) {
       // The orb, so the lock screen looks like an audiobook player, not a blank square
       artwork: [{ src: "/apple-icon", sizes: "180x180", type: "image/png" }],
     });
+    const skip = (seconds: number) => {
+      const audio = audioRef.current;
+      if (audio) seek(Math.max(0, Math.min(audio.currentTime + seconds, audio.duration || Infinity)));
+    };
+    // Time skips and a working scrubber, as an audiobook player has. (Jumping by sentence, what
+    // the arrow keys do, makes no sense on a lock screen where you can't see the text.)
     const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
       ["play", () => void audioRef.current?.play()],
       ["pause", () => audioRef.current?.pause()],
-      ["previoustrack", () => void step(-1)],
-      ["nexttrack", () => void step(1)],
+      ["seekbackward", (details) => skip(-(details.seekOffset ?? SKIP_SECONDS))],
+      ["seekforward", (details) => skip(details.seekOffset ?? SKIP_SECONDS)],
+      ["seekto", (details) => details.seekTime != null && seek(details.seekTime)],
     ];
     for (const [action, handler] of handlers) {
       try {
@@ -380,7 +388,7 @@ export function useReadAlong(doc: DocumentDetail, chapters: Chapter[]) {
         }
       }
     };
-  }, [chapter, doc.title, doc.author, step]);
+  }, [chapter, doc.title, doc.author, seek]);
 
   return {
     ready,
