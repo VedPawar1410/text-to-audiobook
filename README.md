@@ -36,7 +36,8 @@ paste · .txt/.md · PDF · EPUB · web link
         │
         ├─► read-along reader: word highlighting, tap-to-seek, 4 highlight styles, speeds
         ├─► Ask AI side panel: answers about the book "so far" (no spoilers)
-        └─► export: M4B or MP3 with chapter markers
+        ├─► export: M4B or MP3 with chapter markers
+        └─► iPhone app (installed from Safari): save a book, listen with no connection
 ```
 
 **Why these choices**
@@ -46,6 +47,7 @@ paste · .txt/.md · PDF · EPUB · web link
 - **A measurement harness before any fix.** Each format is rendered from a synthetic book, so the right answer is known exactly, and every change shows its before and after.
 - **Free by default.** Local Kokoro voices; a free Gemini key you bring yourself; Groq (free) takes over when Gemini is overloaded. Narrate runs on your computer, because no free host without a card can run the voice engine.
 - **One data model** (sections → blocks → segments): parsing, directing, recording and reading are separate stages that can each be re-run; editing one line re-records only that line.
+- **A web app instead of a native one.** Recording needs the computer anyway, and a home-screen web app gets lock-screen audio and offline books with no App Store and no paid developer account. Reports said iPhones stop such apps' audio on lock, so that was tested on a real phone before building on it ([research notebook, E9](docs/research/README.md)).
 
 ## Inputs (no dataset)
 
@@ -82,6 +84,8 @@ apps/web/                 Next.js app (App Router, TypeScript, Tailwind, Motion)
   src/components/         reader, player bar, Ask AI panel, director's notes, library
   src/lib/api.ts          typed client for the API (all calls go through /api)
   src/lib/demo.ts         the showcase switch (NEXT_PUBLIC_DEMO=1)
+  src/lib/offline.ts      "Save for offline": stores a book and the app in Cache Storage
+  public/sw.js            service worker: answers saved audio and pages when the server can't be reached
   public/demo/            the showcase book: a snapshot of API responses + one MP3
   next.config.ts          /api proxy to FastAPI, or to public/demo in the showcase
 services/api/             FastAPI backend
@@ -131,6 +135,8 @@ It prints an HTTPS address like `https://your-mac.your-tailnet.ts.net`: open it 
 
 **Install it on an iPhone:** in Safari tap Share → Add to Home Screen. Narrate then opens full-screen from its own icon. Measured on an iPhone with iOS 27.0.1: it keeps playing while locked, moves to the next chapter by itself, and the lock screen has 15-second skips and a progress bar ([research notebook, E9](docs/research/README.md)).
 
+**Listen with no connection:** open a recorded book over the HTTPS address and tap **Save for offline** (on the book's page or in the reader; about 29 MB per hour of audio). After that the app opens from its icon with no signal, or with the computer off: the Library shows your saved books, marked "On this phone", and the reader plays them with word highlighting. Importing, directing, recording and Ask AI still need the computer, and say so. Saving needs HTTPS, so it isn't offered in `--phone` mode.
+
 **Optional settings** (`services/api/.env`, all listed in `.env.example`): `GROQ_API_KEY` for the fallback director, `STRUCTURE_AI=gemini` or `claude` (+ `ANTHROPIC_API_KEY`) for the AI second opinion at import.
 
 **Developing** (auto-reload, two terminals):
@@ -170,6 +176,7 @@ The structure evaluation prints the scores table; `--label "<name>"` records a r
 - **Import:** scanned PDFs need OCR (not supported); in a PDF with neither indents nor blank lines, a paragraph whose last line is nearly full width can't be split; DRM-protected EPUBs can't be read; a short Title Case line ending in ":" (a letter's "Dear Sir:") can become a sub-heading; non-fiction sidebars in EPUBs are skipped with footnotes.
 - **The structure evaluation is synthetic** apart from the real-input checks above; books with layouts it doesn't cover are the real risk.
 - **Single user, no login, no CI.** Books imported before the revive keep their old structure until re-imported.
+- **The phone app is for listening, and its testing is narrow.** Lock-screen audio and offline listening were confirmed on one iPhone (iOS 27.0.1) with a two-chapter book; older iOS versions, Android and a full-length saved book are untested. iOS reported storage as not persistent when tested, so it may clear saved books if the phone runs short of space; the book's page then says the copy is gone instead of failing. A computer that's really asleep was only simulated, and imports wait for the browser's own timeout before explaining.
 
 ## Learning log: mistakes and what I learned
 
@@ -207,7 +214,23 @@ I built Narrate in two layers: a fast feature build, then a revive that measured
 | 2.9 | Run locally with one command; `--phone` for the Wi-Fi; a static showcase on Vercel | No free, card-less host can run the voice engine (1.8); the showcase is enough to show the product. |
 | 2.10 | Verify from a fresh clone under macOS's bash 3.2 | Found the lockfile drift (1.7), a bash 3.2 syntax error, short pasted paragraphs being merged, and tests reading my own `.env`. |
 
-*Known gaps I chose not to fix:* OCR for scanned PDFs, a phone app (PWA), paid or expressive voices, user accounts, CI, Docker, "Export as EPUB", re-importing old books, the pre-existing ruff warnings (FastAPI `Depends`).
+*Known gaps I chose not to fix:* OCR for scanned PDFs, paid or expressive voices, user accounts, CI, Docker, "Export as EPUB", re-importing old books, the pre-existing ruff warnings (FastAPI `Depends`).
+
+### Layer 3: the iPhone app (11 Nov 2026)
+
+*What I did:* made Narrate reachable from anywhere over private HTTPS, installable on an iPhone, and able to play saved books with no connection, deciding each risky part with a test on the real phone.
+
+| # | Decision or mistake | What happened and why |
+|---|---|---|
+| 3.1 | Tested the feared limit instead of believing it | Reports from 2020 to iOS 26 said installed web apps stop audio on lock. A measuring page on my iPhone (iOS 27.0.1) showed it kept playing for 5+ minutes and moved between chapters, so the installable app went ahead (1.8). |
+| 3.2 | Tailscale Serve for access | Real HTTPS (installing and offline both need it), private to my own devices, works on mobile data, $0. Safer than `--phone`, which exposes a no-login app to the whole Wi-Fi. |
+| 3.3 | **Mistake:** the lock screen had previous/next track buttons | iOS shows those instead of a progress bar, so I could neither skip nor scrub. Replaced with 15-second skips and `seekto` after trying it on the phone. |
+| 3.4 | Proved offline audio before building the feature | iPhones request media in byte ranges (a 2-byte probe, then the rest), so a naive cached response can fail. A throwaway test compared a service worker against in-memory blobs in airplane mode. Both worked; the service worker won because the reader needed almost no changes. |
+| 3.5 | **Mistake:** put "Save for offline" only in the reader | Downloads live on the book page, so that's where I looked and found nothing. It's now in both places. Put a feature where the related ones already are. |
+| 3.6 | Save the app along with the book; cache nothing else | Audio alone can't launch an app with no pages. Storing pages only on save keeps a phone with no saved books behaving as if the service worker weren't there. Rejected Next's `useOffline` (retries only) and Serwist (a dependency and build step for a small app). |
+| 3.7 | Treat "no answer" as offline, not just "failed" | Airplane mode fails instantly, but a sleeping server can hang for a minute. The worker waits 4 s when it has a copy; tested by freezing the server with SIGSTOP. |
+
+*Known gaps I chose not to fix:* Android and older iOS testing, recording on the phone (the voice engine needs the computer), cleaning old app code out of the phone's cache (the whole build is under 2 MB).
 
 ### Key takeaways
 
@@ -216,10 +239,10 @@ I built Narrate in two layers: a fast feature build, then a revive that measured
 3. **Validate inputs you didn't write.** Metadata, page text and converter output all lied at least once.
 4. **Test the way a stranger installs it.** A fresh clone found four bugs my machine had hidden.
 5. **Most limits were the budget, not the design.** Writing down what each constraint cost makes the trade-offs explainable.
+6. **Test platform folklore on the real device.** Years of reports said this couldn't work on an iPhone; a short test on the phone itself said it could.
 
 ## Future improvements
 
-- Offline books in the installed app: in progress (decision log §6).
 - Expressive voices (OpenAI gpt-4o-mini-tts or ElevenLabs) through the existing one-file engine interface.
 - OCR for scanned PDFs; an "Export as EPUB" option.
 - CI running the tests and the structure evaluation on every push.

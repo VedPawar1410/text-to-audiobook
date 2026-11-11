@@ -32,7 +32,8 @@ Build-session numbers (Oct 28 – Nov 1, 2026) are marked as such and come from 
 | E6 | Where can it be hosted for $0 with no card? | Web research, Nov 2026 | Nowhere for the voice engine → run locally + static showcase | [8](#8-e6-hosting-and-model-pricing-research) |
 | E7 | Does the optional AI second opinion help? | Harness + hard case + real input, 2 models, 3 repeats | Yes on messy X threads only; never called on normal books | [10](#10-step-by-step-measurements) |
 | E8 | Does it install for a stranger? | Fresh clone, throwaway database, bash 3.2 | After 4 fixes, yes (33 s setup) | [10](#10-step-by-step-measurements) |
-| E9 | Is a PWA worth it on an iPhone? | Web research + iOS Simulator layout check; device test pending | Not yet: installed web apps may stop audio on lock; HTTPS via Tailscale first | [13](#13-e9-pwa-on-iphone-2026-11-11) |
+| E9 | Is a PWA worth it on an iPhone? | Web research, then a measuring page on a real iPhone (iOS 27.0.1) | Yes: the installed app kept playing locked, contrary to older reports | [13](#13-e9-pwa-on-iphone-2026-11-11) |
+| E10 | Can saved books play and open with no connection? | Service worker vs blob test, then the real feature, in the iOS Simulator and in airplane mode on the iPhone | Yes: byte-range audio, cold launch, read-along and lock screen all work (two-chapter book) | [13](#13-e9-pwa-on-iphone-2026-11-11) |
 
 ---
 
@@ -464,3 +465,6 @@ Saved app code is whatever the pages' HTML lists (17 files for the Library); the
 
 The stopped-server case was fast because an awake Mac refuses the connection at once. A Mac really asleep with
 Tailscale on wasn't tried on the phone, only simulated above. A full-length book offline is also still untested.
+
+To repeat the phone measurements: open `/lab/lock-test` or `/lab/offline-test` on the phone over the HTTPS address.
+Each page reports its results as JSON. They aren't linked from the app.

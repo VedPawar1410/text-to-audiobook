@@ -48,7 +48,7 @@ behind it. This table says what each constraint cost and what we would do withou
 | Rejected | **Rotating keys across several free accounts** | Breaks both providers' terms; limits are per account/project anyway. |
 | Rejected | Pretty-printed JSON for labels | ~80 output tokens per line, even with short keys only 40% better. |
 | Deferred | **Two Kokoro engines in parallel** | Averaged 4.7× vs 3.9× real time, but noisily, and costs ~330 MB more. |
-| Deferred | **PWA / mobile app** | Ved deferred it on 2026-11-01. A plan existed: manifest, icons, service worker, safe-area fixes, HTTPS via Tailscale Serve, optional offline books. |
+| Deferred, then built | **PWA / mobile app** | Ved deferred it on 2026-11-01. A plan existed: manifest, icons, service worker, safe-area fixes, HTTPS via Tailscale Serve, optional offline books. Built on 2026-11-11: see §6. |
 | Deferred | Paid / expressive voices | The engine interface is ready (one adapter file). |
 
 ---
@@ -369,7 +369,7 @@ opinion) / 0 junk with 0 words lost; EPUB added; runs locally in one command and
 Wi-Fi; a free public showcase on Vercel.
 
 ### Deferred: could be done later
-PWA / phone app · paid or expressive voices · CI (GitHub Actions running the tests) · Docker
+Paid or expressive voices · CI (GitHub Actions running the tests) · Docker
 Compose (Docker isn't installed on the dev machine, so it couldn't be verified) · "Export as
 EPUB" · OCR for scanned PDFs · user accounts · a real migrations tool instead of idempotent
 `ALTER TABLE … ADD COLUMN IF NOT EXISTS` at startup · end-to-end tests · re-importing books made
@@ -419,7 +419,7 @@ reports, not measurements, so the plan measures on Ved's phone before committing
 |---|---|---|
 | P1 | `start.sh --tailscale` (HTTPS from anywhere, your devices only) + iPhone polish (safe areas, home-screen icon, lock-screen artwork); deliberately **no** standalone manifest yet | Done 2026-11-11; Tailscale verified on Ved's iPhone (Wi-Fi and mobile data) |
 | P2 | Test on Ved's iPhone with a measuring page (`/lab/lock-test`): Safari tab vs home-screen app, seconds of audio played while locked, lock-screen controls, storage quota | Done 2026-11-11: installed mode works |
-| P3 | Decided: build the installable app with "Save for offline" (installed mode passed the phone test) | Awaiting plan approval |
+| P3 | Decided: build the installable app with "Save for offline" (installed mode passed the phone test) | Done 2026-11-11 (P3.1 to P3.5 below) |
 
 ### P1 details
 - **`--tailscale` mode:** the web app binds to 127.0.0.1 only; `tailscale serve --bg --https=443
@@ -518,3 +518,15 @@ they wait until the browser gives up before explaining. Offline, the app is the 
 Old builds' code stays in the cache (the whole build is 1.8 MB) because older saved pages still need it. Books
 saved before this change show as out of date and need saving again. A Mac that is really asleep with Tailscale on
 was only simulated (a frozen server); on the iPhone, Narrate was stopped on an awake Mac, which fails fast.
+
+**P3.5 done (2026-11-11):** README (install and offline use, limits, Layer 3 of the learning log), research notebook
+index and this log brought up to date. `/lab/lock-test` and `/lab/offline-test` stay in the repo, reachable by URL
+only, so the phone measurements can be repeated.
+
+**PWA in one line:** 7 commits on 2026-11-11, each tested on Ved's iPhone and pushed by Ved: private HTTPS from
+anywhere, an installable app that keeps playing locked with lock-screen skips and scrubbing, and saved books that
+open and play with no connection, at $0 and with no new dependencies.
+
+**Still open, could be done later:** Android and older iOS testing; a full-length book offline; a Mac really asleep
+with Tailscale on; a timeout for imports when the Mac doesn't answer; removing old builds' code from the phone's
+cache; persistent storage (iOS reported `persisted: false`).
