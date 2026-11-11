@@ -479,3 +479,8 @@ offline experience. 5. Docs. Listening only: importing and recording still need 
 **P3.1 done:** `app/manifest.ts` (name, icons, `display: standalone`, opens on the Library) and
 `appleWebApp` metadata (title, translucent status bar). Verified in a production build: manifest served
 and linked on every page, `mobile-web-app-capable` and the Apple title and status-bar tags present.
+
+**P3.2 done (2026-11-11):** saved audio plays and seeks in airplane mode on Ved's iPhone, by both methods.
+**Chosen: the service worker with cached files**, because the reader keeps asking for the same URLs and
+needs almost no changes. **Rejected (kept as a known fallback):** audio from memory via blob URLs, which
+also worked but would need reader changes and holds a whole file in memory.

@@ -400,3 +400,25 @@ several minutes, and moving to the next chapter while locked.
 **Conclusion of E9:** on this iPhone (iOS 27.0.1), an installed web app keeps audio playing while locked,
 contrary to the older reports (2020 to iOS 26). One device and one iOS version; the measurement is what
 decided P3, not the reports.
+
+**P3.2 offline audio, simulator run** (iPhone 17 simulator, iOS 27.2, real WebKit; `/lab/offline-test`). The book
+(*The Gift of the Magi*, 5.7 MB) was saved, then the server was stopped so the site had no network behind it:
+
+| Method | Played to | Seek to 357 s landed at | Audio requests seen by the service worker |
+|---|---|---|---|
+| Saved file through the service worker | 3.9 s | 359.9 s | 2 |
+| From memory (blob URL) | 3.9 s | 359.8 s | 0 |
+
+So iOS does route media through the service worker, and the byte-range answers work. The page reported
+"online" because only this site was down, not the whole network. The embedded browser pane couldn't register
+a service worker at all, so the simulator was used instead. A real iPhone in airplane mode is still to be tested.
+
+**P3.2 on the real iPhone, airplane mode** (`online: false`; installed app; 5.7 MB saved):
+
+| Method | Played to | Seek to 357 s landed at | Error | Requests through the service worker |
+|---|---|---|---|---|
+| Saved file through the service worker | 3.7 s | 359.4 s | none | 2 (`bytes=0-1`, then `bytes=0-5714540`) |
+| From memory (blob URL) | 3.7 s | 359.4 s | none | 0 |
+
+iOS probes with a 2-byte range, then asks for the whole file; both are answered from the cache. Ved also heard
+both play.

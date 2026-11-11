@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Library } from "@/components/library";
 import { Eyebrow } from "@/components/ui";
 
@@ -12,6 +13,10 @@ export default function LibraryPage() {
       <div className="mt-10">
         <Library />
       </div>
+      {/* Temporary: the installed app has no address bar. Removed once offline books ship (P3.3). */}
+      <Link href="/lab/offline-test" className="mt-16 inline-block text-xs text-ink-faint">
+        Lab: offline test
+      </Link>
     </main>
   );
 }
